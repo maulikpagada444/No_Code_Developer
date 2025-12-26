@@ -4,7 +4,7 @@ import SignUp from "./SignUp";
 import SignOtp from "./sign-otp";
 
 const SignUpFlow = () => {
-    const [step, setStep] = useState(1);
+    const [step, setStep] = useState(2);
     const [email, setEmail] = useState("");
 
     return (

@@ -31,6 +31,19 @@ const ForgotPasswordScreen = ({ setStep, setEmail }) => {
                 backgroundPosition: "center",
             }}
         >
+            {/* --- GLOW EFFECT --- */}
+            <div
+                className="absolute rounded-[100%] pointer-events-none z-0"
+                style={{
+                    width: '990px',
+                    height: '562px',
+                    top: '-281px',
+                    left: '49%',
+                    transform: 'translateX(-50%)',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    filter: 'blur(120px)',
+                }}
+            ></div>
             <div className="w-full max-w-md">
                 {/* CARD */}
                 <div

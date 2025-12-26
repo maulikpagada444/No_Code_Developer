@@ -47,6 +47,19 @@ const SignInScreen = () => {
                 backgroundPosition: "center",
             }}
         >
+            {/* --- GLOW EFFECT --- */}
+            <div
+                className="absolute rounded-[100%] pointer-events-none z-0"
+                style={{
+                    width: '990px',
+                    height: '562px',
+                    top: '-281px',
+                    left: '48%',
+                    transform: 'translateX(-50%)',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    filter: 'blur(120px)',
+                }}
+            ></div>
             <div className="w-full max-w-8xl flex justify-center mx-auto grid grid-cols-1 lg:grid-cols-[520px_100px] gap-10 items-center">
 
                 {/* CARD */}
