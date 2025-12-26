@@ -59,30 +59,6 @@ const NewProjectModal = ({ onClose }) => {
                     />
                 </div>
 
-                {/* Description */}
-                <div className="mb-8">
-                    <label
-                        className={`text-sm mb-2 block ${theme === "dark"
-                            ? "text-gray-300"
-                            : "text-gray-600"
-                            }`}
-                    >
-                        Project Description
-                    </label>
-                    <textarea
-                        rows="4"
-                        placeholder="Enter Project Description"
-                        className={`
-                            w-full px-4 py-3 rounded-xl outline-none text-sm resize-none
-                            border
-                            ${theme === "dark"
-                                ? "bg-white/5 border-white/10 text-white placeholder-gray-500"
-                                : "bg-gray-50 border-gray-300 text-black placeholder-gray-400"
-                            }
-                        `}
-                    />
-                </div>
-
                 {/* Continue Button */}
                 <button
                     onClick={() => navigate("/project/workspace")}
