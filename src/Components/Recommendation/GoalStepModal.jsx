@@ -1,73 +1,125 @@
 import React, { useContext, useState } from "react";
-import { FiPhone, FiSearch } from "react-icons/fi";
-import Header from "./Header.jsx";
 import { ThemeContext } from "../../ThemeProvider.jsx";
+import Header from "./Header.jsx";
+import Cookies from "js-cookie";
 
 import bgLight from "../../../Public/bg.png";
 import bgDark from "../../../Public/bg_black.png";
 
-/* ---------------- STEPS CONFIG ---------------- */
-
-const steps = [
-    {
-        type: "cards",
-        title: "What is your primary goal?",
-        subtitle:
-            "Jarvis will restructure your site's DNA based on this selection.",
-        options: [
-            { title: "Get more calls", desc: "Optimize layout for direct contact and lead generation." },
-            { title: "Sell products", desc: "Optimize layout for direct contact and lead generation." },
-            { title: "Build brand presence", desc: "Optimize layout for direct contact and lead generation." },
-        ],
-    },
-    {
-        type: "search",
-        title: "Describe your Business",
-        subtitle:
-            "Which industries does your project operate in? Select all that apply.",
-        placeholder: "Optimize layout for direct contact and lead generation.",
-        options: [
-            "Retail & E-Com",
-            "Technology & SaaS",
-            "Creative & Arts",
-            "Health & Wellness",
-            "Professional Svcs",
-            "Food & Beverage",
-        ],
-    },
-    {
-        type: "textarea",
-        title: "Who is your target audience?",
-        subtitle:
-            "Describe who you want to reach. The AI will analyze this to generate tailored copy, imagery styles, and layout structures that resonate.",
-        placeholder: "Optimize layout for direct contact and lead generation.",
-    },
-    {
-        type: "yesno",
-        title: "Do you already have a website?",
-        subtitle: "This helps us decide whether to redesign or create from scratch.",
-    },
-];
-
-/* ---------------- COMPONENT ---------------- */
-
-const GoalStepModal = ({ onClose }) => {
+const GoalStepModal = ({ onClose, firstQuestion }) => {
     const { theme } = useContext(ThemeContext);
     const isDark = theme === "dark";
 
-    const [stepIndex, setStepIndex] = useState(0);
+    const [question, setQuestion] = useState(firstQuestion);
     const [selected, setSelected] = useState(null);
+    const [textAnswer, setTextAnswer] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [isFinished, setIsFinished] = useState(false);
+    const [history, setHistory] = useState([]);
 
-    const step = steps[stepIndex];
+    // 🔹 SAFE OPTION LIST (handles all backend formats)
+    const optionList =
+        question?.options ||
+        question?.optional?.options ||
+        null;
 
-    const nextStep = () => {
-        if (stepIndex < steps.length - 1) {
-            setSelected(null);
-            setStepIndex(stepIndex + 1);
-        } else {
-            onClose();
+    // 🔹 OPTION TYPE DETECTION (future proof)
+    const isOptionType =
+        ["options", "color", "optional", "select"].includes(question?.type) ||
+        Array.isArray(optionList);
+
+    const handleContinue = async () => {
+        if (!question) return;
+
+        const answer =
+            question.type === "text"
+                ? textAnswer
+                : selected;
+
+        if (!answer) return;
+
+        setLoading(true);
+
+        try {
+            const res = await fetch(
+                `${import.meta.env.VITE_API_BASE_URL}/recommendation/next-question`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${Cookies.get("access_token")}`,
+                    },
+                    body: JSON.stringify({
+                        session_id: Cookies.get("session_id"),
+                        question_id: question.id,
+                        answer,
+                    }),
+                }
+            );
+
+            const data = await res.json();
+            console.log("⬅️ Next-question response:", data);
+
+            const nextQuestion =
+                data?.next_question ||
+                data?.questions?.[0] ||
+                data?.question ||
+                null;
+
+            if (nextQuestion?.id) {
+                setHistory(prev => [...prev, question]); // 🔥 save current
+                setQuestion(nextQuestion);
+                setSelected(null);
+                setTextAnswer("");
+                return;
+            }
+
+            if (data?.completed === true) {
+                setIsFinished(true);
+                return;
+            }
+
+            console.warn("⚠️ Unexpected backend response:", data);
+
+        } catch (err) {
+            console.error("❌ Next Question Error:", err);
+        } finally {
+            setLoading(false);
         }
     };
+
+    const handlePreview = () => {
+        if (history.length === 0) return;
+
+        const prevQuestion = history[history.length - 1];
+
+        setHistory(prev => prev.slice(0, -1)); // last remove
+        setQuestion(prevQuestion);
+        setSelected(null);
+        setTextAnswer("");
+    };
+
+
+    /* ---------------- FINISHED SCREEN ---------------- */
+    if (isFinished) {
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+                <div className="bg-white rounded-2xl p-10 text-center">
+                    <h2 className="text-2xl font-semibold mb-4">
+                        ✅ Setup Completed
+                    </h2>
+                    <button
+                        onClick={onClose}
+                        className="mt-4 px-6 py-2 border rounded-full hover:bg-black hover:text-white transition"
+                    >
+                        Go to Workspace
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (!question) return null;
 
     return (
         <div
@@ -79,148 +131,87 @@ const GoalStepModal = ({ onClose }) => {
                 backgroundPosition: "center",
             }}
         >
-            {/* HEADER */}
             <Header />
 
-            {/* GRID OVERLAY */}
-            <div
-                className="
-                    absolute inset-0 pointer-events-none
-                    bg-[linear-gradient(rgba(0,0,0,0.04)_1px,transparent_1px),
-                    linear-gradient(90deg,rgba(0,0,0,0.04)_1px,transparent_1px)]
-                    bg-[size:40px_40px]
-                "
+            {/* GRID */}
+            <div className="absolute inset-0 pointer-events-none
+                bg-[linear-gradient(rgba(0,0,0,0.04)_1px,transparent_1px),
+                linear-gradient(90deg,rgba(0,0,0,0.04)_1px,transparent_1px)]
+                bg-[size:40px_40px]"
             />
 
-            {/* CENTER CARD */}
             <div className="relative z-10 flex flex-1 items-center justify-center px-6">
                 <div
-                    className={`
-                        w-full max-w-5xl rounded-[28px] p-12
-                        border backdrop-blur-xl
+                    className={`w-full max-w-5xl rounded-[28px] p-12 border backdrop-blur-xl
                         shadow-[0_40px_100px_rgba(0,0,0,0.25)]
                         ${isDark
                             ? "bg-black/70 border-white/10 text-white"
                             : "bg-white border-gray-300 text-black"
-                        }
-                    `}
+                        }`}
                 >
-                    {/* TOP BAR */}
+                    {/* TOP */}
                     <div className="flex justify-between text-xs mb-6 opacity-70">
                         <span>INITIALIZING ENGINE......</span>
-                        <span>STEP {String(stepIndex + 1).padStart(2, "0")} / 06</span>
+                        <span>STEP</span>
                     </div>
 
                     <div className={`h-px mb-10 ${isDark ? "bg-white/10" : "bg-gray-300"}`} />
 
-                    {/* TITLE */}
+                    {/* QUESTION */}
                     <div className="text-center mb-12">
                         <h2 className="text-2xl font-semibold mb-2">
-                            {step.title}
+                            {question.question}
                         </h2>
-                        <p className="text-sm opacity-70">
-                            {step.subtitle}
-                        </p>
+                        {question._topic_label && (
+                            <p className="text-sm opacity-70">
+                                {question._topic_label}
+                            </p>
+                        )}
                     </div>
 
-                    {/* CARDS */}
-                    {step.type === "cards" && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-16">
-                            {step.options.map((item, i) => (
+                    {/* OPTIONS / COLOR / OPTIONAL / SELECT */}
+                    {isOptionType && optionList && (
+                        <div className="grid md:grid-cols-3 gap-10 mb-16">
+                            {optionList.map((opt, i) => (
                                 <div
                                     key={i}
-                                    onClick={() => setSelected(i)}
-                                    className={`
-                                        rounded-2xl p-8 text-center cursor-pointer transition
-                                        border
-                                        ${selected === i
+                                    onClick={() => setSelected(opt)}
+                                    className={`rounded-2xl p-8 text-center cursor-pointer border transition
+                                        ${selected === opt
                                             ? isDark
                                                 ? "border-white bg-white/10"
                                                 : "border-black shadow-md"
                                             : isDark
                                                 ? "border-white/10 hover:bg-white/5"
                                                 : "border-gray-300 hover:bg-gray-50"
-                                        }
-                                    `}
+                                        }`}
                                 >
-                                    <div
-                                        className={`
-                                            w-14 h-14 mx-auto mb-5 rounded-full
-                                            border flex items-center justify-center
-                                            ${isDark ? "border-white/20" : "border-gray-400"}
-                                        `}
-                                    >
-                                        <FiPhone />
-                                    </div>
-                                    <h3 className="font-medium mb-2">{item.title}</h3>
-                                    <p className="text-sm opacity-70">{item.desc}</p>
+                                    <h3 className="font-medium">{typeof opt === 'object' ? opt.label : opt}</h3>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {/* SEARCH */}
-                    {step.type === "search" && (
-                        <>
-                            <div
-                                className={`
-                                    mb-10 flex items-center gap-3 px-4 py-3 rounded-xl border
-                                    ${isDark ? "border-white/10 bg-white/5" : "border-gray-300"}
-                                `}
-                            >
-                                <FiSearch className="opacity-60" />
-                                <input
-                                    placeholder={step.placeholder}
-                                    className="w-full outline-none text-sm bg-transparent"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-                                {step.options.map((item, i) => (
-                                    <div
-                                        key={i}
-                                        onClick={() => setSelected(i)}
-                                        className={`
-                                            rounded-2xl p-6 text-center cursor-pointer transition border
-                                            ${selected === i
-                                                ? isDark
-                                                    ? "border-white bg-white/10"
-                                                    : "border-black shadow-md"
-                                                : isDark
-                                                    ? "border-white/10 hover:bg-white/5"
-                                                    : "border-gray-300 hover:bg-gray-50"
-                                            }
-                                        `}
-                                    >
-                                        {item}
-                                    </div>
-                                ))}
-                            </div>
-                        </>
-                    )}
-
-                    {/* TEXTAREA */}
-                    {step.type === "textarea" && (
+                    {/* TEXT INPUT */}
+                    {question.type === "text" && (
                         <textarea
                             rows="6"
-                            placeholder={step.placeholder}
-                            className={`
-                                w-full rounded-xl border px-5 py-4 mb-16 resize-none
-                                bg-transparent outline-none
-                                ${isDark ? "border-white/10" : "border-gray-300"}
-                            `}
+                            value={textAnswer}
+                            onChange={(e) => setTextAnswer(e.target.value)}
+                            placeholder="Type your answer here..."
+                            className={`w-full rounded-xl border px-5 py-4 mb-16 resize-none bg-transparent outline-none
+                                ${isDark ? "border-white/10" : "border-gray-300"}`}
                         />
                     )}
 
                     {/* YES / NO */}
-                    {step.type === "yesno" && (
+                    {question.type === "yesno" && (
                         <div className="flex justify-center gap-8 mb-16">
                             {["Yes", "No"].map((val) => (
                                 <button
                                     key={val}
                                     onClick={() => setSelected(val)}
-                                    className={`
-                                        px-12 py-4 rounded-2xl text-lg font-medium transition border
+                                    className={`px-12 py-4 rounded-2xl text-lg font-medium border transition
                                         ${selected === val
                                             ? isDark
                                                 ? "bg-white text-black border-white"
@@ -228,8 +219,7 @@ const GoalStepModal = ({ onClose }) => {
                                             : isDark
                                                 ? "border-white/10 hover:bg-white/5"
                                                 : "border-gray-300 hover:bg-gray-50"
-                                        }
-                                    `}
+                                        }`}
                                 >
                                     {val}
                                 </button>
@@ -239,21 +229,35 @@ const GoalStepModal = ({ onClose }) => {
 
                     {/* FOOTER */}
                     <div className="flex justify-between items-center">
-                        <span className="text-sm opacity-60">Previews</span>
                         <button
-                            disabled={step.type !== "textarea" && selected === null}
-                            onClick={nextStep}
-                            className={`
-                                px-10 py-2.5 rounded-full border transition
-                                ${step.type === "textarea" || selected !== null
+                            onClick={handlePreview}
+                            disabled={history.length === 0}
+                            className={`text-sm transition
+        ${history.length === 0
+                                    ? "opacity-40 cursor-not-allowed"
+                                    : isDark
+                                        ? "text-white hover:underline"
+                                        : "text-black hover:underline"
+                                }`}
+                        >
+                            ← Previews
+                        </button>
+                        <button
+                            disabled={
+                                loading ||
+                                (question.type === "text" && !textAnswer) ||
+                                (question.type !== "text" && !selected)
+                            }
+                            onClick={handleContinue}
+                            className={`px-10 py-2.5 rounded-full border transition
+                                ${selected || textAnswer
                                     ? isDark
                                         ? "border-white hover:bg-white hover:text-black"
                                         : "border-black hover:bg-black hover:text-white"
                                     : "opacity-40 cursor-not-allowed border-gray-400"
-                                }
-                            `}
+                                }`}
                         >
-                            Continue
+                            {loading ? "Loading..." : "Continue"}
                         </button>
                     </div>
                 </div>

@@ -84,35 +84,6 @@ const SettingProfile = () => {
                     </div>
                 </div>
 
-                {/* Email */}
-                <div>
-                    <label className="block text-sm mb-2">
-                        Email
-                    </label>
-                    <div
-                        className={`
-                            flex items-center px-4 py-3 rounded-lg border
-                            ${theme === "dark"
-                                ? "bg-white/5 border-white/10"
-                                : "border-gray-300"
-                            }
-                        `}
-                    >
-                        <FiMail className="mr-3 text-gray-400" />
-                        <input
-                            type="email"
-                            placeholder="Enter Your Email"
-                            className={`
-                                w-full outline-none text-sm bg-transparent
-                                ${theme === "dark"
-                                    ? "text-white placeholder-gray-500"
-                                    : "text-black placeholder-gray-400"
-                                }
-                            `}
-                        />
-                    </div>
-                </div>
-
                 {/* Save Button */}
                 <div className="flex justify-end pt-6">
                     <button

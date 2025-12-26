@@ -51,6 +51,7 @@ const Header = () => {
             Cookies.remove("username");
             Cookies.remove("email");
             Cookies.remove("user_id");
+            Cookies.remove("project_id");
 
             // ✅ Redirect
             navigate("/signin");
@@ -71,12 +72,10 @@ const Header = () => {
             >
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
 
-                    {/* Logo */}
                     <div className="text-lg font-semibold">
                         ✏️ Logo
                     </div>
 
-                    {/* Nav */}
                     <nav className="flex gap-2 text-sm font-medium">
                         {[
                             { name: "Dashboard", path: "/dashboard" },
@@ -99,7 +98,6 @@ const Header = () => {
                         ))}
                     </nav>
 
-                    {/* USER DROPDOWN */}
                     <div className="relative" ref={dropdownRef}>
                         <button
                             onClick={() => setOpen(!open)}
@@ -154,7 +152,6 @@ const Header = () => {
                 </div>
             </header>
 
-            {/* 🔴 LOGOUT CONFIRM MODAL (CENTERED) */}
             {showLogoutConfirm && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div

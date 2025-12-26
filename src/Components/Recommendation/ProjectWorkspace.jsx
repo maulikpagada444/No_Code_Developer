@@ -2,15 +2,74 @@ import React, { useContext, useState } from "react";
 import { FiMic } from "react-icons/fi";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import Header from "./Header.jsx";
+import LanguageSelector from "./LanguageSelector.jsx";
 
 import bgLight from "../../../Public/bg.png";
 import bgDark from "../../../Public/bg_black.png";
 import GoalStepModal from "./GoalStepModal.jsx";
+import Cookies from "js-cookie";
 
 const ProjectWorkspace = () => {
     const { theme } = useContext(ThemeContext);
     const isDark = theme === "dark";
     const [showGoalStep, setShowGoalStep] = useState(false);
+    const [language, setLanguage] = useState("Hindi");
+    const [prompt, setPrompt] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [firstQuestion, setFirstQuestion] = useState(null);
+
+
+    const handleGenerate = async () => {
+        if (!prompt.trim()) return;
+
+        setLoading(true);
+
+        try {
+            const token = Cookies.get("access_token");
+
+            const response = await fetch(
+                `${import.meta.env.VITE_API_BASE_URL}/recommendation/generated_question`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        prompt,
+                        language: language.toLowerCase(),
+                    }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || data.status === false) {
+                throw new Error(data?.message || "Generation failed");
+            }
+
+            // ✅ SAVE SESSION ID
+            if (data.session_id) {
+                Cookies.set("session_id", data.session_id);
+            }
+
+            // ✅ SAVE FIRST QUESTION
+            if (data.questions?.length) {
+                setFirstQuestion(data.questions[0]);
+            }
+
+            setShowGoalStep(true);
+
+        } catch (error) {
+            console.error("❌ Generate Error:", error);
+            alert(error.message || "Server not reachable");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
+
 
     return (
         <div
@@ -34,6 +93,17 @@ const ProjectWorkspace = () => {
 
             {/* HEADER (only when modal closed) */}
             {!showGoalStep && <Header />}
+
+            {/* LANGUAGE SELECTOR */}
+            {!showGoalStep && (
+                <div className="absolute top-[92px] right-6 z-30">
+                    <LanguageSelector
+                        theme={theme}
+                        value={language}
+                        onChange={(lang) => setLanguage(lang)}
+                    />
+                </div>
+            )}
 
             {/* MAIN */}
             <main className="relative z-10 flex flex-col items-center justify-center text-center px-6 flex-1">
@@ -71,35 +141,43 @@ const ProjectWorkspace = () => {
                             }`}
                     >
                         <input
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
                             placeholder='Example: "Explain quantum computing in simple terms"'
                             className={`flex-1 bg-transparent outline-none text-sm
-                            ${isDark ? "placeholder-gray-500" : "placeholder-gray-400"}`}
+        ${isDark ? "placeholder-gray-500" : "placeholder-gray-400"}`}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                     e.preventDefault();
-                                    setShowGoalStep(true);
+                                    handleGenerate();
                                 }
                             }}
                         />
 
                         <button
-                            onClick={() => setShowGoalStep(true)}
+                            onClick={handleGenerate}
+                            disabled={loading}
                             className={`px-6 py-2 rounded-full text-sm font-medium transition
-                            ${isDark
-                                    ? "bg-white/10 text-white hover:bg-white hover:text-black shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+        ${isDark
+                                    ? "bg-white/10 text-white hover:bg-white hover:text-black"
                                     : "bg-black text-white hover:bg-gray-900"
                                 }`}
                         >
-                            Send
+                            {loading ? "Generating..." : "Send"}
                         </button>
+
                     </div>
                 </div>
             </main>
 
             {/* GOAL STEP MODAL */}
             {showGoalStep && (
-                <GoalStepModal onClose={() => setShowGoalStep(false)} />
+                <GoalStepModal
+                    firstQuestion={firstQuestion}
+                    onClose={() => setShowGoalStep(false)}
+                />
             )}
+
         </div>
     );
 };
