@@ -1,11 +1,12 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import Header from "./Header";
 import { FiPlus, FiEdit2, FiFolder, FiMic } from "react-icons/fi";
 import { ThemeContext } from "../../ThemeProvider.jsx";
-
+import NewProjectModal from "../Recommendation/NewProjectModal.jsx";
 /* Reusable Glass Card */
-const GlassCard = ({ theme, className = "", children }) => (
+const GlassCard = ({ theme, className = "", children, ...props }) => (
     <div
+        {...props}
         className={`
             rounded-3xl border backdrop-blur-xl
             ${theme === "dark"
@@ -19,8 +20,10 @@ const GlassCard = ({ theme, className = "", children }) => (
     </div>
 );
 
+
 const Dashboard = () => {
     const { theme } = useContext(ThemeContext);
+    const [openNewProject, setOpenNewProject] = useState(false);
 
     return (
         <div
@@ -56,7 +59,11 @@ const Dashboard = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
                     {/* LEFT CARD */}
-                    <GlassCard theme={theme} className="p-6 h-[260px]">
+                    <GlassCard
+                        theme={theme}
+                        className="p-6 h-[260px] cursor-pointer hover:bg-white/10 transition"
+                        onClick={() => setOpenNewProject(true)}
+                    >
                         <div
                             className={`
                                 w-11 h-11 rounded-lg flex items-center justify-center mb-4
@@ -173,6 +180,9 @@ const Dashboard = () => {
                 </div>
             </main>
 
+            {openNewProject && (
+                <NewProjectModal onClose={() => setOpenNewProject(false)} />
+            )}
             {/* MIC */}
             <div className="
                 fixed bottom-10 left-10 z-20
