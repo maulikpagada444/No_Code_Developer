@@ -6,6 +6,7 @@ import SignInFlow from './Components/SignIn/SignInFlow';
 import Dashboard from './Components/Dashboard/Dashboard';
 import Project from './Components/Dashboard/Project';
 import Setting from './Components/Dashboard/Setting';
+import ProjectWorkspace from './Components/Recommendation/ProjectWorkspace';
 
 function App() {
   return (
@@ -20,6 +21,8 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/project" element={<Project />} />
         <Route path="/dashboard/setting" element={<Setting />} />
+        <Route path="/project/workspace" element={<ProjectWorkspace />} />
+
       </Routes>
     </ThemeProvider>
   );
