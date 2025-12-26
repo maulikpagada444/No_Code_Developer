@@ -16,7 +16,7 @@ const ResetPassword = ({ setStep, email }) => {
     const [showConfirm, setShowConfirm] = useState(false);
     const [status, setStatus] = useState({ type: "", message: "" });
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (!form.password || !form.confirm) {
@@ -29,12 +29,54 @@ const ResetPassword = ({ setStep, email }) => {
             return;
         }
 
-        setStatus({ type: "success", message: "Password reset successful" });
+        setStatus({ type: "", message: "" });
 
-        setTimeout(() => {
-            setStep(1); // back to sign in
-        }, 800);
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_API_BASE_URL}/auth/forgot-password/reset-password`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        new_password: form.password,
+                        confirm_password: form.confirm,
+                    }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || data.status === false) {
+                setStatus({
+                    type: "error",
+                    message: data?.message || "Failed to reset password",
+                });
+                return;
+            }
+
+            // ✅ SUCCESS
+            setStatus({
+                type: "success",
+                message: "Password reset successful",
+            });
+
+            // ✅ GO TO SUCCESS SCREEN
+            setTimeout(() => {
+                setStep(5);
+            }, 700);
+
+        } catch (err) {
+            console.error("Reset password error:", err);
+            setStatus({
+                type: "error",
+                message: "Server not reachable",
+            });
+        }
     };
+
 
     return (
         <div

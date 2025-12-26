@@ -3,6 +3,7 @@ import Home from './Components/Home/Home';
 import { ThemeProvider } from './ThemeProvider';
 import SignUpFlow from './Components/SignUp/SignUpFlow';
 import SignInFlow from './Components/SignIn/SignInFlow';
+import SignOtp from './Components/SignUp/sign-otp';
 import Dashboard from './Components/Dashboard/Dashboard';
 import Project from './Components/Dashboard/Project';
 import Setting from './Components/Dashboard/Setting';
@@ -17,6 +18,7 @@ function App() {
         <Route path="/home" element={<Home />} />
 
         <Route path="/signup" element={<SignUpFlow />} />
+        <Route path="/signup-otp" element={<SignOtp />} />
         <Route path="/signin" element={<SignInFlow />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/dashboard/project" element={<Project />} />
