@@ -12,16 +12,22 @@ import {
     FaRegUser,
 } from "react-icons/fa";
 import { MdLockOutline } from "react-icons/md";
+import Cookies from "js-cookie";
+import { jwtDecode } from "jwt-decode";
 
 import bgLight from "../../../Public/bg.png";
 import bgDark from "../../../Public/bg_black.png";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 
-const SignInScreen = () => {
+const SignInScreen = ({ setStep, setEmail }) => {
     const navigate = useNavigate();
     const { theme } = useContext(ThemeContext);
 
+    const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+
     const [formData, setFormData] = useState({
         email: "",
         password: "",
@@ -31,10 +37,87 @@ const SignInScreen = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    /* ================= MANUAL LOGIN ================= */
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // 🔗 API connect later
-        navigate("/dashboard");
+        setLoading(true);
+
+        try {
+            const response = await fetch(`${BASE_URL}/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    login_method: "manual",
+                    email: formData.email,
+                    password: formData.password,
+                    device_id: "device-123",
+                    device_name: "Web Browser",
+                    location: "India",
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.status) {
+                throw new Error(data?.message || "Login failed");
+            }
+
+            // ✅ SAVE COOKIES
+            Cookies.set("access_token", data.data.access_token, { secure: true, sameSite: "Strict" });
+            Cookies.set("refresh_token", data.data.refresh_token, { secure: true, sameSite: "Strict" });
+            Cookies.set("user_id", data.data.user_id, { secure: true, sameSite: "Strict" });
+            Cookies.set("email", data.data.email, { secure: true, sameSite: "Strict" });
+
+            if (data.data.username) {
+                Cookies.set("username", data.data.username, { secure: true, sameSite: "Strict" });
+            }
+
+            navigate("/");
+
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    /* ================= GOOGLE LOGIN ================= */
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            const decoded = jwt_decode(credentialResponse.credential);
+
+            const response = await fetch(`${BASE_URL}/auth/google`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: decoded.name,
+                    email: decoded.email,
+                    login_method: "google",
+                    google_social_id: decoded.sub,
+                    picture: decoded.picture,
+                    device_id: "device-123",
+                    device_name: "Chrome",
+                    location: "India",
+                }),
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.status) {
+                throw new Error(data.message || "Google login failed");
+            }
+
+            // ✅ SAVE COOKIES
+            Cookies.set("access_token", data.data.access_token, { secure: true, sameSite: "Strict" });
+            Cookies.set("refresh_token", data.data.refresh_token, { secure: true, sameSite: "Strict" });
+            Cookies.set("user_id", data.data.user_id, { secure: true, sameSite: "Strict" });
+            Cookies.set("email", data.data.email, { secure: true, sameSite: "Strict" });
+            Cookies.set("username", data.data.username, { secure: true, sameSite: "Strict" });
+
+            navigate("/");
+
+        } catch (err) {
+            alert(err.message);
+        }
     };
 
     return (
@@ -65,12 +148,12 @@ const SignInScreen = () => {
                 {/* CARD */}
                 <div
                     className={`
-            rounded-[24px] px-10 py-12 border shadow-[0_30px_80px_rgba(0,0,0,0.08)]
-            ${theme === "dark"
+                    rounded-[24px] px-10 py-12 border shadow-[0_30px_80px_rgba(0,0,0,0.08)]
+                    ${theme === "dark"
                             ? "bg-black border-gray-700 text-white"
                             : "bg-white border-gray-200 text-gray-900"
                         }
-          `}
+                  `}
                 >
                     <h2 className="text-2xl font-semibold text-center">
                         Welcome Back
@@ -116,25 +199,29 @@ const SignInScreen = () => {
 
                         {/* Forgot password */}
                         <div className="text-right text-xs">
-                            <Link
-                                to="/forgot-password"
-                                className={`hover:underline ${theme === "dark" ? "text-gray-300" : "text-gray-500"
+                            <button
+                                type="button"
+                                onClick={() => setStep(2)}
+                                className={`hover:underline ${theme === "dark"
+                                    ? "text-gray-300"
+                                    : "text-gray-500"
                                     }`}
                             >
                                 Forgot Password?
-                            </Link>
+                            </button>
                         </div>
+
 
                         {/* Sign In */}
                         <button
                             type="submit"
                             className={`
-                w-full py-3 rounded-full border font-medium transition
-                ${theme === "dark"
+                        w-full py-3 rounded-full border font-medium transition
+                        ${theme === "dark"
                                     ? "bg-black border-white text-white hover:bg-white hover:text-black"
                                     : "bg-white border-gray-300 hover:shadow-md"
                                 }
-              `}
+                      `}
                         >
                             Sign In
                         </button>
@@ -150,12 +237,12 @@ const SignInScreen = () => {
                         <button
                             type="button"
                             className={`
-                w-full flex items-center justify-center gap-3 py-3 rounded-xl transition
-                ${theme === "dark"
+                        w-full flex items-center justify-center gap-3 py-3 rounded-xl transition
+                        ${theme === "dark"
                                     ? "bg-gray-800 hover:bg-gray-700 text-white"
                                     : "bg-gray-100 hover:bg-gray-200"
                                 }
-              `}
+                      `}
                         >
                             <FaGoogle className="text-red-500" />
                             Continue With Google
@@ -188,12 +275,12 @@ const SignInScreen = () => {
                             <button
                                 key={i}
                                 className={`
-                  w-10 h-10 rounded-xl border flex items-center justify-center transition
-                  ${theme === "dark"
+                          w-10 h-10 rounded-xl border flex items-center justify-center transition
+                          ${theme === "dark"
                                         ? "bg-black border-gray-600 text-gray-300"
                                         : "bg-white border-gray-300 text-gray-600"
                                     }
-                `}
+                        `}
                             >
                                 <Icon />
                             </button>
