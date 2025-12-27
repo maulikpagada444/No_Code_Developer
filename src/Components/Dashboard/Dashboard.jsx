@@ -266,10 +266,6 @@ const Dashboard = () => {
                                                             project.title ||
                                                             "Untitled Project"}
                                                     </p>
-
-                                                    <p className="text-xs text-gray-400">
-                                                        {project.updated_at || project.created_at || "Just now"}
-                                                    </p>
                                                 </div>
                                             </div>
 

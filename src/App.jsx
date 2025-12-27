@@ -9,6 +9,9 @@ import Project from './Components/Dashboard/Project';
 import Setting from './Components/Dashboard/Setting';
 import ProjectWorkspace from './Components/Recommendation/ProjectWorkspace';
 import PreviewPanel from './Components/Preview/PreviewPanel';
+import DomainDashboard from './Components/Domain/Dashboard';
+import ConnectDomain from './Components/Domain/ConnectDomain';
+import CustomDomain from './Components/Domain/CustomDomain';
 
 function App() {
   return (
@@ -24,6 +27,9 @@ function App() {
         <Route path="/dashboard/setting" element={<Setting />} />
         <Route path="/project/workspace" element={<ProjectWorkspace />} />
         <Route path="/project/preview" element={<PreviewPanel />} />
+        <Route path="/sub-domain/dashboard" element={<DomainDashboard />} />
+        <Route path="/domain/connect" element={<ConnectDomain />} />
+        <Route path="/domain/custom" element={<CustomDomain />} />
       </Routes>
     </ThemeProvider>
   );

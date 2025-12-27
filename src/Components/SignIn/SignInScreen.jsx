@@ -215,16 +215,19 @@ const SignInScreen = ({ setStep, setEmail }) => {
                         {/* Sign In */}
                         <button
                             type="submit"
+                            disabled={loading}
                             className={`
-                        w-full py-3 rounded-full border font-medium transition
-                        ${theme === "dark"
+        w-full py-3 rounded-full border font-medium transition
+        ${theme === "dark"
                                     ? "bg-black border-white text-white hover:bg-white hover:text-black"
                                     : "bg-white border-gray-300 hover:shadow-md"
                                 }
-                      `}
+        ${loading ? "opacity-60 cursor-not-allowed" : ""}
+    `}
                         >
-                            Sign In
+                            {loading ? "Signing in..." : "Sign In"}
                         </button>
+
 
                         {/* Divider */}
                         <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-gray-400">

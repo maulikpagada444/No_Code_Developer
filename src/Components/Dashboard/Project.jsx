@@ -10,6 +10,9 @@ const Project = () => {
     const [loading, setLoading] = useState(true);
     const [deleteProject, setDeleteProject] = useState(null);
     const [deleting, setDeleting] = useState(false);
+    const [editProject, setEditProject] = useState(null);
+    const [newProjectName, setNewProjectName] = useState("");
+    const [updating, setUpdating] = useState(false);
 
     const extractProjects = (data) => {
         if (Array.isArray(data)) return data;
@@ -87,6 +90,48 @@ const Project = () => {
         }
     };
 
+    const handleUpdateProjectName = async () => {
+        if (!newProjectName.trim()) return;
+
+        try {
+            setUpdating(true);
+            const token = Cookies.get("access_token");
+
+            const res = await fetch(
+                `${import.meta.env.VITE_API_BASE_URL}/auth/project/update`,
+                {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        project_id: editProject.project_id,
+                        new_project_name: newProjectName,
+                    }),
+                }
+            );
+
+            const data = await res.json();
+
+            if (data?.status === true) {
+                setProjects((prev) =>
+                    prev.map((p) =>
+                        p.project_id === editProject.project_id
+                            ? { ...p, project_name: newProjectName }
+                            : p
+                    )
+                );
+                setEditProject(null);
+            } else {
+                alert(data?.message || "Update failed");
+            }
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+
 
     return (
         <>
@@ -123,17 +168,70 @@ const Project = () => {
                         <p className="text-sm opacity-60">No projects found</p>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                            {projects.map((project, i) => (
+                            {projects.map((project) => (
                                 <ProjectCard
-                                    key={project.project_id}
+                                    key={project.project_id}   // ✅ VERY IMPORTANT
                                     project={project}
                                     onDeleteClick={(p) => setDeleteProject(p)}
+                                    onEditClick={(p) => {
+                                        setEditProject(p);
+                                        setNewProjectName(p.project_name);
+                                    }}
                                 />
                             ))}
+
                         </div>
                     )}
                 </div>
             </div>
+            {editProject && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div
+                        className={`
+                w-[90%] max-w-sm rounded-2xl p-6 shadow-2xl
+                ${theme === "dark"
+                                ? "bg-[#111] text-white border border-white/10"
+                                : "bg-white text-black border border-gray-200"}
+            `}
+                    >
+                        <h3 className="text-lg font-semibold mb-2">
+                            Rename Project
+                        </h3>
+
+                        <p className="text-sm text-gray-500 mb-4">
+                            Enter a new name for your project
+                        </p>
+
+                        <input
+                            value={newProjectName}
+                            onChange={(e) => setNewProjectName(e.target.value)}
+                            className={`
+                    w-full px-4 py-2 rounded-lg mb-6 outline-none border
+                    ${theme === "dark"
+                                    ? "bg-black border-white/10 text-white"
+                                    : "bg-white border-gray-300"}
+                `}
+                        />
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setEditProject(null)}
+                                className="px-4 py-2 rounded-lg text-sm border hover:bg-gray-100"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={handleUpdateProjectName}
+                                disabled={updating}
+                                className="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                            >
+                                {updating ? "Updating..." : "Update"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {deleteProject && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div

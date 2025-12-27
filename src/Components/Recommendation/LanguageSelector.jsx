@@ -13,7 +13,8 @@ const LanguageSelector = ({ theme, value, onChange }) => {
     const ref = useRef(null);
 
     const selectedLanguage =
-        languages.find((l) => l.value === value) || languages[0];
+        languages.find((l) => l.value === value) || null;
+
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -43,8 +44,9 @@ const LanguageSelector = ({ theme, value, onChange }) => {
                 <div className="flex items-center gap-3">
                     <HiOutlineTranslate size={18} />
                     <span className="font-medium">
-                        {selectedLanguage.label}
+                        {selectedLanguage ? selectedLanguage.label : "Select Interaction"}
                     </span>
+
                 </div>
 
                 {open ? <FiChevronUp /> : <FiChevronDown />}
@@ -89,6 +91,7 @@ const LanguageSelector = ({ theme, value, onChange }) => {
                                     {value === lang.value && (
                                         <span className="w-2.5 h-2.5 rounded-full bg-white" />
                                     )}
+
                                 </span>
 
                                 <span className="font-medium">
