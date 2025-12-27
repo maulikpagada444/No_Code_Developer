@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 import { FiMoreVertical } from "react-icons/fi";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 
-const ProjectCard = () => {
+const ProjectCard = ({ project, onDeleteClick }) => {
     const { theme } = useContext(ThemeContext);
 
     return (
@@ -44,27 +44,30 @@ const ProjectCard = () => {
 
                     <div>
                         <p className="text-sm font-medium">
-                            Portfolio_2024
+                            {project.project_name || "Untitled Project"}
                         </p>
                         <p
                             className={`text-xs ${theme === "dark"
-                                    ? "text-gray-400"
-                                    : "text-gray-400"
+                                ? "text-gray-400"
+                                : "text-gray-400"
                                 }`}
                         >
-                            edit 1 minute ago
+                            {project.updated_at || project.created_at || "Just now"}
                         </p>
                     </div>
                 </div>
 
                 <FiMoreVertical
+                    onClick={() => onDeleteClick(project)}
                     className={`
-                        ${theme === "dark"
+        cursor-pointer
+        ${theme === "dark"
                             ? "text-gray-400 hover:text-white"
-                            : "text-gray-500"
+                            : "text-gray-500 hover:text-black"
                         }
-                    `}
+    `}
                 />
+
             </div>
         </div>
     );
