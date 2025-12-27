@@ -8,15 +8,14 @@ import Dashboard from './Components/Dashboard/Dashboard';
 import Project from './Components/Dashboard/Project';
 import Setting from './Components/Dashboard/Setting';
 import ProjectWorkspace from './Components/Recommendation/ProjectWorkspace';
+import PreviewPanel from './Components/Preview/PreviewPanel';
 
 function App() {
   return (
     <ThemeProvider>
-
       <Routes>
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="/home" element={<Home />} />
-
         <Route path="/signup" element={<SignUpFlow />} />
         <Route path="/signup-otp" element={<SignOtp />} />
         <Route path="/signin" element={<SignInFlow />} />
@@ -24,7 +23,7 @@ function App() {
         <Route path="/dashboard/project" element={<Project />} />
         <Route path="/dashboard/setting" element={<Setting />} />
         <Route path="/project/workspace" element={<ProjectWorkspace />} />
-
+        <Route path="/project/preview" element={<PreviewPanel />} />
       </Routes>
     </ThemeProvider>
   );

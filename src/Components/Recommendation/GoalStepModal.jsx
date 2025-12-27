@@ -5,6 +5,7 @@ import Cookies from "js-cookie";
 
 import bgLight from "../../../Public/bg.png";
 import bgDark from "../../../Public/bg_black.png";
+import ColorSelection from "./ColorSelection.jsx";
 
 const GoalStepModal = ({ onClose, firstQuestion }) => {
     const { theme } = useContext(ThemeContext);
@@ -15,15 +16,14 @@ const GoalStepModal = ({ onClose, firstQuestion }) => {
     const [textAnswer, setTextAnswer] = useState("");
     const [loading, setLoading] = useState(false);
     const [isFinished, setIsFinished] = useState(false);
-    const [history, setHistory] = useState([]);
 
-    // 🔹 SAFE OPTION LIST (handles all backend formats)
+    /* 🔹 SAFE OPTION LIST */
     const optionList =
         question?.options ||
         question?.optional?.options ||
         null;
 
-    // 🔹 OPTION TYPE DETECTION (future proof)
+    /* 🔹 OPTION TYPE DETECTION */
     const isOptionType =
         ["options", "color", "optional", "select"].includes(question?.type) ||
         Array.isArray(optionList);
@@ -67,7 +67,6 @@ const GoalStepModal = ({ onClose, firstQuestion }) => {
                 null;
 
             if (nextQuestion?.id) {
-                setHistory(prev => [...prev, question]); // 🔥 save current
                 setQuestion(nextQuestion);
                 setSelected(null);
                 setTextAnswer("");
@@ -80,25 +79,12 @@ const GoalStepModal = ({ onClose, firstQuestion }) => {
             }
 
             console.warn("⚠️ Unexpected backend response:", data);
-
         } catch (err) {
             console.error("❌ Next Question Error:", err);
         } finally {
             setLoading(false);
         }
     };
-
-    const handlePreview = () => {
-        if (history.length === 0) return;
-
-        const prevQuestion = history[history.length - 1];
-
-        setHistory(prev => prev.slice(0, -1)); // last remove
-        setQuestion(prevQuestion);
-        setSelected(null);
-        setTextAnswer("");
-    };
-
 
     /* ---------------- FINISHED SCREEN ---------------- */
     if (isFinished) {
@@ -134,7 +120,8 @@ const GoalStepModal = ({ onClose, firstQuestion }) => {
             <Header />
 
             {/* GRID */}
-            <div className="absolute inset-0 pointer-events-none
+            <div
+                className="absolute inset-0 pointer-events-none
                 bg-[linear-gradient(rgba(0,0,0,0.04)_1px,transparent_1px),
                 linear-gradient(90deg,rgba(0,0,0,0.04)_1px,transparent_1px)]
                 bg-[size:40px_40px]"
@@ -169,7 +156,7 @@ const GoalStepModal = ({ onClose, firstQuestion }) => {
                         )}
                     </div>
 
-                    {/* OPTIONS / COLOR / OPTIONAL / SELECT */}
+                    {/* OPTIONS */}
                     {isOptionType && optionList && (
                         <div className="grid md:grid-cols-3 gap-10 mb-16">
                             {optionList.map((opt, i) => (
@@ -186,7 +173,9 @@ const GoalStepModal = ({ onClose, firstQuestion }) => {
                                                 : "border-gray-300 hover:bg-gray-50"
                                         }`}
                                 >
-                                    <h3 className="font-medium">{typeof opt === 'object' ? opt.label : opt}</h3>
+                                    <h3 className="font-medium">
+                                        {typeof opt === "object" ? opt.label : opt}
+                                    </h3>
                                 </div>
                             ))}
                         </div>
@@ -227,21 +216,28 @@ const GoalStepModal = ({ onClose, firstQuestion }) => {
                         </div>
                     )}
 
+                    {(question.type === "color-matrix" || question.type === "modules-selection") && (
+                        <ColorSelection
+                            stepType={question.type}
+                            options={question.options}
+                            isDark={isDark}
+                            selected={selected}
+                            setSelected={setSelected}
+                            // Custom Color Props
+                            isCustomMode={isCustomMode}
+                            customPalette={customPalette}
+                            activeColorIndex={activeColorIndex}
+                            currentColor={currentColor}
+                            setActiveColorIndex={setActiveColorIndex}
+                            setCurrentColor={setCurrentColor}
+                            handleColorChange={handleColorChange}
+                            handleSaveCustom={handleSaveCustom}
+                        />
+                    )}
+
+
                     {/* FOOTER */}
-                    <div className="flex justify-between items-center">
-                        <button
-                            onClick={handlePreview}
-                            disabled={history.length === 0}
-                            className={`text-sm transition
-        ${history.length === 0
-                                    ? "opacity-40 cursor-not-allowed"
-                                    : isDark
-                                        ? "text-white hover:underline"
-                                        : "text-black hover:underline"
-                                }`}
-                        >
-                            ← Previews
-                        </button>
+                    <div className="flex justify-end">
                         <button
                             disabled={
                                 loading ||
