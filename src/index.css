@@ -9,7 +9,18 @@
     font-family: 'Geist', system-ui, sans-serif;
   }
 
-  /* body {
-    cursor: none;
-  } */
+  body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+}
+
+/* index.css ya global.css */
+body::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  scrollbar-width: none;
+  /* Firefox */
 }
