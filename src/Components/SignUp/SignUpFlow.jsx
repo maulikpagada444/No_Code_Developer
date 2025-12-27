@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-
 import SignUp from "./SignUp";
 import SignOtp from "./sign-otp";
 
@@ -9,19 +8,8 @@ const SignUpFlow = () => {
 
     return (
         <>
-            {step === 1 && (
-                <SignUp
-                    setStep={setStep}
-                    setEmail={setEmail}
-                />
-            )}
-
-            {step === 2 && (
-                <SignOtp
-                    setStep={setStep}
-                    email={email}
-                />
-            )}
+            {step === 1 && <SignUp setStep={setStep} setEmail={setEmail} />}
+            {step === 2 && <SignOtp setStep={setStep} email={email} />}
         </>
     );
 };

@@ -39,7 +39,6 @@ const ColorSelection = ({
     selected,
     setSelected,
     options, // Optional, can fall back to exports
-
     // Custom Color Props
     isCustomMode,
     customPalette,
@@ -50,7 +49,6 @@ const ColorSelection = ({
     handleColorChange,
     handleSaveCustom
 }) => {
-
     if (stepType === 'color-matrix') {
         if (isCustomMode) {
             return (

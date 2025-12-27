@@ -1,10 +1,64 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 const NewProjectModal = ({ onClose }) => {
     const { theme } = useContext(ThemeContext);
     const navigate = useNavigate();
+
+    const [projectName, setProjectName] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    const handleCreateProject = async () => {
+        if (!projectName.trim()) {
+            setError("Project name is required");
+            return;
+        }
+
+        setLoading(true);
+        setError("");
+
+        try {
+            const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+            const accessToken = Cookies.get("access_token");
+
+            const response = await fetch(`${BASE_URL}/auth/project/create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({
+                    project_name: projectName.trim(),
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || data.status !== true) {
+                throw new Error(data?.message || "Project creation failed");
+            }
+
+            // ✅ SAVE PROJECT ID FROM API RESPONSE
+            Cookies.set("project_id", data.data.project_id, {
+                secure: true,
+                sameSite: "Strict",
+            });
+
+            // ✅ REDIRECT TO WORKSPACE
+            navigate("/project/workspace");
+
+        } catch (error) {
+            console.error("Create project error:", error);
+            setError(error.message || "Something went wrong");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
 
@@ -35,22 +89,22 @@ const NewProjectModal = ({ onClose }) => {
                     Project Details
                 </h2>
 
-                {/* Project Name */}
-                <div className="mb-5">
+                {/* INPUT */}
+                <div className="mb-4">
                     <label
-                        className={`text-sm mb-2 block ${theme === "dark"
-                            ? "text-gray-300"
-                            : "text-gray-600"
+                        className={`text-sm mb-2 block ${theme === "dark" ? "text-gray-300" : "text-gray-600"
                             }`}
                     >
                         Project Name
                     </label>
+
                     <input
                         type="text"
+                        value={projectName}
+                        onChange={(e) => setProjectName(e.target.value)}
                         placeholder="Enter Project Name"
                         className={`
-                            w-full px-4 py-3 rounded-xl outline-none text-sm
-                            border
+                            w-full px-4 py-3 rounded-xl outline-none text-sm border
                             ${theme === "dark"
                                 ? "bg-white/5 border-white/10 text-white placeholder-gray-500"
                                 : "bg-gray-50 border-gray-300 text-black placeholder-gray-400"
@@ -59,42 +113,28 @@ const NewProjectModal = ({ onClose }) => {
                     />
                 </div>
 
-                {/* Description */}
-                <div className="mb-8">
-                    <label
-                        className={`text-sm mb-2 block ${theme === "dark"
-                            ? "text-gray-300"
-                            : "text-gray-600"
-                            }`}
-                    >
-                        Project Description
-                    </label>
-                    <textarea
-                        rows="4"
-                        placeholder="Enter Project Description"
-                        className={`
-                            w-full px-4 py-3 rounded-xl outline-none text-sm resize-none
-                            border
-                            ${theme === "dark"
-                                ? "bg-white/5 border-white/10 text-white placeholder-gray-500"
-                                : "bg-gray-50 border-gray-300 text-black placeholder-gray-400"
-                            }
-                        `}
-                    />
-                </div>
+                {/* ERROR */}
+                {error && (
+                    <p className="text-sm text-red-500 mb-4 text-center">
+                        {error}
+                    </p>
+                )}
 
-                {/* Continue Button */}
+                {/* BUTTON */}
                 <button
-                    onClick={() => navigate("/project/workspace")}
-                    className="
-        w-full py-3 rounded-full font-medium
-        bg-white/10 border border-white/20
-        hover:bg-white/20 transition
-    "
+                    onClick={handleCreateProject}
+                    disabled={loading}
+                    className={`
+                        w-full py-3 rounded-full font-medium transition
+                        ${theme === "dark"
+                            ? "bg-white/10 border border-white/20 hover:bg-white/20"
+                            : "bg-black text-white hover:bg-black/90"
+                        }
+                        ${loading ? "opacity-60 cursor-not-allowed" : ""}
+                    `}
                 >
-                    Continue
+                    {loading ? "Creating..." : "Continue"}
                 </button>
-
             </div>
         </div>
     );

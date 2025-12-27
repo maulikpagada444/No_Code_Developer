@@ -10,16 +10,49 @@ const ForgotPasswordScreen = ({ setStep, setEmail }) => {
     const [emailLocal, setEmailLocal] = useState("");
     const [error, setError] = useState("");
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+
         if (!emailLocal.trim()) {
             setError("Please enter a valid email");
             return;
         }
+
         setError("");
-        setEmail(emailLocal.trim());
-        setStep(3); // OTP step
+
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_API_BASE_URL}/auth/forgot-password/send-otp`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        email: emailLocal.trim(),
+                    }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || data.status === false) {
+                setError(data?.message || "Failed to send OTP");
+                return;
+            }
+
+            // ✅ SAVE EMAIL FOR NEXT STEPS
+            setEmail(emailLocal.trim());
+
+            // ✅ GO TO OTP STEP
+            setStep(3);
+
+        } catch (err) {
+            console.error("Forgot password error:", err);
+            setError("Server not reachable");
+        }
     };
+
 
     return (
         <div
@@ -31,6 +64,19 @@ const ForgotPasswordScreen = ({ setStep, setEmail }) => {
                 backgroundPosition: "center",
             }}
         >
+            {/* --- GLOW EFFECT --- */}
+            <div
+                className="absolute rounded-[100%] pointer-events-none z-0"
+                style={{
+                    width: '990px',
+                    height: '562px',
+                    top: '-281px',
+                    left: '49%',
+                    transform: 'translateX(-50%)',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    filter: 'blur(120px)',
+                }}
+            ></div>
             <div className="w-full max-w-md">
                 {/* CARD */}
                 <div

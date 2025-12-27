@@ -4,7 +4,7 @@ import { ThemeContext } from "../../ThemeProvider.jsx";
 import bgLight from "../../../Public/bg.png";
 import bgDark from "../../../Public/bg_black.png";
 
-const OTP_LENGTH = 4;
+const OTP_LENGTH = 6;
 const OTP_TIMER = 30;
 
 const ForgotPasswordOtp = ({ setStep, email }) => {
@@ -39,7 +39,7 @@ const ForgotPasswordOtp = ({ setStep, email }) => {
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         if (otpValues.includes("")) {
@@ -47,14 +47,63 @@ const ForgotPasswordOtp = ({ setStep, email }) => {
             return;
         }
 
+        const otp = otpValues.join("");
+
         setError("");
         setIsSubmitting(true);
 
-        setTimeout(() => {
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_API_BASE_URL}/auth/forgot-password/verify-otp`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        otp: otp,
+                    }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || data.status === false) {
+                setError(data?.message || "Invalid or expired OTP");
+                setIsSubmitting(false);
+                return;
+            }
+
+            // ✅ OTP VERIFIED → GO TO RESET PASSWORD
+            setStep(4);
+
+        } catch (err) {
+            console.error("Verify OTP error:", err);
+            setError("Server not reachable");
+        } finally {
             setIsSubmitting(false);
-            setStep(4); // Reset password step
-        }, 600);
+        }
     };
+
+    const handleResendOtp = async () => {
+        try {
+            await fetch(
+                `${import.meta.env.VITE_API_BASE_URL}/auth/forgot-password/send-otp`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email }),
+                }
+            );
+            setOtpValues(Array(OTP_LENGTH).fill(""));
+            setTimer(OTP_TIMER);
+        } catch {
+            setError("Failed to resend OTP");
+        }
+    };
+
+
 
     return (
         <div
@@ -66,6 +115,19 @@ const ForgotPasswordOtp = ({ setStep, email }) => {
                 backgroundPosition: "center",
             }}
         >
+            {/* --- GLOW EFFECT --- */}
+            <div
+                className="absolute rounded-[100%] pointer-events-none z-0"
+                style={{
+                    width: '990px',
+                    height: '562px',
+                    top: '-281px',
+                    left: '49%',
+                    transform: 'translateX(-50%)',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    filter: 'blur(120px)',
+                }}
+            ></div>
             <div className="w-full max-w-md">
                 {/* CARD */}
                 <div
@@ -85,7 +147,7 @@ const ForgotPasswordOtp = ({ setStep, email }) => {
                         className={`text-sm text-center mt-2 mb-6 ${theme === "dark" ? "text-gray-400" : "text-gray-500"
                             }`}
                     >
-                        We&apos;ve sent a 4-digit code to
+                        We&apos;ve sent a 6-digit code to
                         <span
                             className={`block font-medium mt-1 ${theme === "dark" ? "text-white" : "text-gray-800"
                                 }`}
@@ -136,10 +198,7 @@ const ForgotPasswordOtp = ({ setStep, email }) => {
                             ) : (
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        setOtpValues(Array(OTP_LENGTH).fill(""));
-                                        setTimer(OTP_TIMER);
-                                    }}
+                                    onClick={handleResendOtp}
                                     className={`font-medium ${theme === "dark" ? "text-white" : "text-gray-900"
                                         }`}
                                 >

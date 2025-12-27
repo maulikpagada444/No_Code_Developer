@@ -96,6 +96,8 @@ const GoalStepModal = ({ onClose }) => {
 
     const [stepIndex, setStepIndex] = useState(0);
     const [selected, setSelected] = useState(null);
+    const [textAnswer, setTextAnswer] = useState("");
+    const [loading, setLoading] = useState(false);
 
     // Custom Color State
     const [isCustomMode, setIsCustomMode] = useState(false);
@@ -120,7 +122,8 @@ const GoalStepModal = ({ onClose }) => {
 
     const nextStep = () => {
         if (stepIndex < steps.length - 1) {
-            setSelected(null);
+            setSelected(null); // Reset selection
+            setTextAnswer(""); // Reset text
             setIsCustomMode(false);
             setStepIndex(stepIndex + 1);
         } else {
@@ -144,42 +147,33 @@ const GoalStepModal = ({ onClose }) => {
                 backgroundPosition: "center",
             }}
         >
-            {/* HEADER */}
             <Header />
 
-            {/* GRID OVERLAY */}
+            {/* GRID */}
             <div
-                className="
-                    absolute inset-0 pointer-events-none
-                    bg-[linear-gradient(rgba(0,0,0,0.04)_1px,transparent_1px),
-                    linear-gradient(90deg,rgba(0,0,0,0.04)_1px,transparent_1px)]
-                    bg-[size:40px_40px]
-                "
+                className="absolute inset-0 pointer-events-none
+                bg-[linear-gradient(rgba(0,0,0,0.04)_1px,transparent_1px),
+                linear-gradient(90deg,rgba(0,0,0,0.04)_1px,transparent_1px)]
+                bg-[size:40px_40px]"
             />
 
-            {/* CENTER CARD */}
             <div className="relative z-10 flex flex-1 items-center justify-center px-6">
                 <div
-                    className={`
-                        w-full max-w-5xl rounded-[28px] p-12
-                        border backdrop-blur-xl
+                    className={`w-full max-w-5xl rounded-[28px] p-12 border backdrop-blur-xl
                         shadow-[0_40px_100px_rgba(0,0,0,0.25)]
                         ${isDark
                             ? "bg-black/70 border-white/10 text-white"
                             : "bg-white border-gray-300 text-black"
-                        }
-                    `}
+                        }`}
                 >
-                    {/* TOP BAR */}
+                    {/* TOP */}
                     <div className="flex justify-between text-xs mb-6 opacity-70">
                         <span>INITIALIZING ENGINE......</span>
-                        <span>STEP {String(stepIndex + 1).padStart(2, "0")} / 07</span>
+                        <span>STEP {String(stepIndex + 1).padStart(2, "0")} / {String(steps.length).padStart(2, "0")}</span>
                     </div>
 
-                    {/* <div className={`h-px mb-10 ${isDark ? "bg-white/10" : "bg-gray-300"}`} /> */}
-
                     {/* TITLE */}
-                    <div className={`${step.type === "color-matrix" ? "flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left" : "text-center"}`}>
+                    <div className={`${step.type === "color-matrix" ? "flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-left" : "text-center mb-12"}`}>
                         <div>
                             <h2 className="text-2xl font-semibold mb-2">
                                 {isCustomMode ? "Lock In Your Look." : step.title}
@@ -204,92 +198,66 @@ const GoalStepModal = ({ onClose }) => {
                         )}
                     </div>
 
-                    {/* CARDS */}
-                    {step.type === "cards" && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-16">
-                            {step.options.map((item, i) => (
+                    {/* CONTENT RENDERERS */}
+
+                    {/* CARDS (Step 0) */}
+                    {step.type === "cards" && step.options && (
+                        <div className="grid md:grid-cols-3 gap-10 mb-16">
+                            {step.options.map((opt, i) => (
                                 <div
                                     key={i}
-                                    onClick={() => setSelected(i)}
-                                    className={`
-                                        rounded-2xl p-8 text-center cursor-pointer transition
-                                        border
-                                        ${selected === i
+                                    onClick={() => setSelected(opt.title)}
+                                    className={`rounded-2xl p-8 text-left cursor-pointer border transition flex flex-col h-full
+                                        ${selected === opt.title
                                             ? isDark
                                                 ? "border-white bg-white/10"
                                                 : "border-black shadow-md"
                                             : isDark
                                                 ? "border-white/10 hover:bg-white/5"
                                                 : "border-gray-300 hover:bg-gray-50"
-                                        }
-                                    `}
+                                        }`}
                                 >
-                                    <div
-                                        className={`
-                                            w-14 h-14 mx-auto mb-5 rounded-full
-                                            border flex items-center justify-center
-                                            ${isDark ? "border-white/20" : "border-gray-400"}
-                                        `}
-                                    >
-                                        <FiPhone />
-                                    </div>
-                                    <h3 className="font-medium mb-2">{item.title}</h3>
-                                    <p className="text-sm opacity-70">{item.desc}</p>
+                                    <h3 className="font-medium text-lg mb-2">{opt.title}</h3>
+                                    <p className="text-sm opacity-60">{opt.desc}</p>
                                 </div>
                             ))}
                         </div>
                     )}
 
-                    {/* SEARCH */}
-                    {step.type === "search" && (
-                        <>
-                            <div
-                                className={`
-                                    mb-10 flex items-center gap-3 px-4 py-3 rounded-xl border
-                                    ${isDark ? "border-white/10 bg-white/5" : "border-gray-300"}
-                                `}
-                            >
-                                <FiSearch className="opacity-60" />
-                                <input
-                                    placeholder={step.placeholder}
-                                    className="w-full outline-none text-sm bg-transparent"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-                                {step.options.map((item, i) => (
-                                    <div
-                                        key={i}
-                                        onClick={() => setSelected(i)}
-                                        className={`
-                                            rounded-2xl p-6 text-center cursor-pointer transition border
-                                            ${selected === i
-                                                ? isDark
-                                                    ? "border-white bg-white/10"
-                                                    : "border-black shadow-md"
-                                                : isDark
-                                                    ? "border-white/10 hover:bg-white/5"
-                                                    : "border-gray-300 hover:bg-gray-50"
-                                            }
-                                        `}
-                                    >
-                                        {item}
-                                    </div>
-                                ))}
-                            </div>
-                        </>
+                    {/* SEARCH (Step 1) */}
+                    {step.type === "search" && step.options && (
+                        <div className="grid md:grid-cols-3 gap-6 mb-16">
+                            {step.options.map((opt, i) => (
+                                <div
+                                    key={i}
+                                    onClick={() => setSelected(opt)}
+                                    className={`rounded-2xl p-6 text-center cursor-pointer border transition
+                                        ${selected === opt
+                                            ? isDark
+                                                ? "border-white bg-white/10"
+                                                : "border-black shadow-md"
+                                            : isDark
+                                                ? "border-white/10 hover:bg-white/5"
+                                                : "border-gray-300 hover:bg-gray-50"
+                                        }`}
+                                >
+                                    <h3 className="font-medium">
+                                        {opt}
+                                    </h3>
+                                </div>
+                            ))}
+                        </div>
                     )}
 
-                    {/* TEXTAREA */}
+                    {/* TEXT INPUT */}
                     {step.type === "textarea" && (
                         <textarea
                             rows="6"
-                            placeholder={step.placeholder}
-                            className={`
-                                w-full rounded-xl border px-5 py-4 mb-16 resize-none
-                                bg-transparent outline-none
-                                ${isDark ? "border-white/10" : "border-gray-300"}
-                            `}
+                            value={textAnswer}
+                            onChange={(e) => setTextAnswer(e.target.value)}
+                            placeholder={step.placeholder || "Type your answer here..."}
+                            className={`w-full rounded-xl border px-5 py-4 mb-16 resize-none bg-transparent outline-none
+                                ${isDark ? "border-white/10" : "border-gray-300"}`}
                         />
                     )}
 
@@ -300,8 +268,7 @@ const GoalStepModal = ({ onClose }) => {
                                 <button
                                     key={val}
                                     onClick={() => setSelected(val)}
-                                    className={`
-                                        px-12 py-4 rounded-2xl text-lg font-medium transition border
+                                    className={`px-12 py-4 rounded-2xl text-lg font-medium border transition
                                         ${selected === val
                                             ? isDark
                                                 ? "bg-white text-black border-white"
@@ -309,8 +276,7 @@ const GoalStepModal = ({ onClose }) => {
                                             : isDark
                                                 ? "border-white/10 hover:bg-white/5"
                                                 : "border-gray-300 hover:bg-gray-50"
-                                        }
-                                    `}
+                                        }`}
                                 >
                                     {val}
                                 </button>
@@ -347,7 +313,6 @@ const GoalStepModal = ({ onClose }) => {
                         </div>
                     )}
 
-
                     {/* COLOR MATRIX & MODULES SELECTION via ColorSelection Component */}
                     {(step.type === "color-matrix" || step.type === "modules-selection") && (
                         <ColorSelection
@@ -356,7 +321,6 @@ const GoalStepModal = ({ onClose }) => {
                             isDark={isDark}
                             selected={selected}
                             setSelected={setSelected}
-
                             // Custom Color Props
                             isCustomMode={isCustomMode}
                             customPalette={customPalette}
@@ -369,25 +333,24 @@ const GoalStepModal = ({ onClose }) => {
                         />
                     )}
 
-                    {/* CUSTOM COLOR VIEW - OLD LOCATION REMOVED (Handled inside ColorSelection above) */}
-
                     {/* FOOTER */}
-                    <div className="flex justify-between items-center">
-                        <span className="text-sm opacity-60">Previews</span>
+                    <div className="flex justify-end">
                         <button
-                            disabled={step.type !== "textarea" && selected === null}
+                            disabled={
+                                loading ||
+                                (step.type === "textarea" && !textAnswer) ||
+                                (step.type !== "textarea" && !isCustomMode && selected === null)
+                            }
                             onClick={nextStep}
-                            className={`
-                                px-10 py-2.5 rounded-full border transition
-                                ${step.type === "textarea" || selected !== null
+                            className={`px-10 py-2.5 rounded-full border transition
+                                ${(selected !== null || textAnswer || (isCustomMode))
                                     ? isDark
                                         ? "border-white hover:bg-white hover:text-black"
                                         : "border-black hover:bg-black hover:text-white"
                                     : "opacity-40 cursor-not-allowed border-gray-400"
-                                }
-                            `}
+                                }`}
                         >
-                            Continue
+                            {loading ? "Loading..." : "Continue"}
                         </button>
                     </div>
                 </div>
