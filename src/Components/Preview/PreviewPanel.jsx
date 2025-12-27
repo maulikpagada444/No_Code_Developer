@@ -7,11 +7,12 @@ import { useNavigate } from "react-router-dom";
 import PublishModal from "./PublishModal";
 import SubDomainModal from "../Domain/SubDomainModal";
 import { ThemeContext } from "../../ThemeProvider";
+import Header from "./Header";
 
 export default function PreviewPanel() {
     const navigate = useNavigate();
     const { theme } = useContext(ThemeContext);
-
+    const [mode, setMode] = useState("preview");
     const [inputValue, setInputValue] = useState("");
     const [viewMode, setViewMode] = useState("desktop");
     const [showPublishModal, setShowPublishModal] = useState(false);
@@ -36,71 +37,7 @@ export default function PreviewPanel() {
             )}
 
             {/* ================= HEADER ================= */}
-            <header
-                className={`h-[60px] flex items-center justify-between px-6 shrink-0 z-50 border-b
-                ${isDark
-                        ? "bg-[#0f0f0f] border-white/10"
-                        : "bg-white border-gray-200"
-                    }
-            `}
-            >
-                {/* Left Logo */}
-                <div className="flex items-center gap-2">
-                    <Paperclip
-                        className={`h-5 w-5 -rotate-45 ${isDark ? "text-white" : "text-black"}`}
-                    />
-                    <span className="font-bold text-lg tracking-tight">
-                        Logo
-                    </span>
-                </div>
-
-                {/* Center Toggle */}
-                <div
-                    className={`absolute left-1/2 -translate-x-1/2 flex items-center p-1 rounded-full border
-                    ${isDark
-                            ? "bg-white/5 border-white/10"
-                            : "bg-gray-100 border-gray-200"
-                        }
-                `}
-                >
-                    <button
-                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm transition
-                        ${isDark
-                                ? "text-gray-400 hover:text-white"
-                                : "text-gray-500 hover:text-gray-900"
-                            }
-                    `}
-                    >
-                        Edit
-                    </button>
-
-                    <button
-                        className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold border
-                        ${isDark
-                                ? "bg-white text-black border-white"
-                                : "bg-white text-black border-gray-200 shadow-sm"
-                            }
-                    `}
-                    >
-                        Preview
-                    </button>
-                </div>
-
-                {/* Right User */}
-                <div
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md border
-                    ${isDark
-                            ? "bg-white/5 border-white/10"
-                            : "bg-white border-gray-200"
-                        }
-                `}
-                >
-                    <span className="text-sm font-medium">
-                        Demo User
-                    </span>
-                    <User className={`h-4 w-4 ${isDark ? "text-gray-400" : "text-gray-500"}`} />
-                </div>
-            </header>
+            <Header mode={mode} onModeChange={setMode} />
 
             {/* ================= MAIN PREVIEW ================= */}
             <main className="flex-1 relative z-10 w-full h-full flex items-center justify-center p-8 overflow-hidden">
@@ -167,18 +104,23 @@ export default function PreviewPanel() {
                 </div>
             </main>
 
-            {/* ================= FLOATING UI ================= */}
-            <ChatPanel
-                inputValue={inputValue}
-                onInputChange={setInputValue}
-                onSubmit={() => setInputValue("")}
-            />
+            {/* 🔥 SHOW ONLY IN EDIT MODE */}
+            {mode === "edit" && (
+                <>
+                    <ChatPanel
+                        inputValue={inputValue}
+                        onInputChange={setInputValue}
+                        onSubmit={() => setInputValue("")}
+                    />
 
-            <BottomToolbar
-                viewMode={viewMode}
-                onViewChange={setViewMode}
-                onPublishClick={() => setShowPublishModal(true)}
-            />
+                    <BottomToolbar
+                        viewMode={viewMode}
+                        onViewChange={setViewMode}
+                        onPublishClick={() => setShowPublishModal(true)}
+                    />
+                </>
+            )}
+
 
             {showPublishModal && (
                 <PublishModal
