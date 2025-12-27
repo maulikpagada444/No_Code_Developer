@@ -26,6 +26,7 @@ import t4 from '../../../Public/t4.png';
 import t5 from '../../../Public/t5.png';
 import t6 from '../../../Public/t6.png';
 import t7 from '../../../Public/t7.png';
+import bgLight from "../../../Public/bg.png";
 import Cookies from "js-cookie";
 // ==============================
 // 2. COMPONENTS
@@ -74,7 +75,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav ref={navRef} className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
+    <nav ref={navRef} className="bg-transparent">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
@@ -194,7 +195,7 @@ const Banner = () => {
 
 
   return (
-    <section id="home" className="relative bg-[#f1f5f9] dark:bg-[#1A1A1A] pt-5 h-[400px] md:h-[500px] lg:h-[720px] overflow-visible transition-colors duration-300">
+    <section id="home" className="relative bg-transparent pt-5 h-[400px] md:h-[500px] lg:h-[720px] overflow-visible transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div ref={bannerRef} className="text-center">
           <h3 className="text-2xl md:text-3xl lg:text-4xl xl:text-6xl font-bold text-gray-900 dark:text-white mb-4 md:mb-6 mt-[20px]">
@@ -279,96 +280,6 @@ const Banner = () => {
   );
 };
 
-const SectionBoxes = () => {
-  const { theme } = useContext(ThemeContext);
-  const boxRef = useRef(null);
-  useGsapReveal(boxRef);
-
-  const sections = [
-    {
-      id: 1,
-      category: 'Plan',
-      title: 'Sitemaps',
-      description: 'Quickly Map-Out Your Website Pages With An AI-Generated Sitemap',
-      items: ['Navbar', 'Hero Header Section', 'Feature Section', 'Features List Section', 'Features List Section', '+ Section'],
-      color: 'border-[#4E00FF]',
-      bgColor: 'bg-[#F6F2FF]'
-    },
-    {
-      id: 2,
-      category: 'Structure',
-      title: 'Wireframes',
-      description: 'Effortlessly Structure Your Pages And Copy With Distraction-Free Wireframes',
-      items: ['Navbar', 'Hero Header Section', 'Feature Section', 'Features List Section', 'Features List Section', '+ Section'],
-      color: 'border-[#FF5100]',
-      bgColor: 'bg-[#FFF3ED]'
-    },
-    {
-      id: 3,
-      category: 'Conceptualise',
-      title: 'Style Guide',
-      description: 'Instantly Create Design Concepts And Apply The Winning Style Across Pages',
-      items: ['Navbar', 'Hero Header Section', 'Feature Section', 'Features List Section', 'Features List Section', '+ Section'],
-      color: 'border-[#006600]',
-      bgColor: 'bg-[#F3FFF3]'
-    },
-  ];
-
-  return (
-    <section className="pb-8 md:pb-12 lg:pb-16 bg-white dark:bg-black mt-[100px] md:mt-[250px] lg:mt-[400px] md:flex-col transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div ref={boxRef} className="flex flex-wrap justify-center gap-4 md:gap-6 lg:gap-8">
-          {sections.map((section) => (
-            <div key={section.id} className={`relative flex flex-col w-full sm:w-1/2 lg:w-1/4 p-4 md:p-5 lg:p-6 border-2 ${section.color} ${section.bgColor} dark:bg-gray-800 min-h-[400px] md:min-h-[500px] lg:min-h-[600px] max-h-[500px] md:max-h-[600px] lg:max-h-[700px] max-w-[300px] md:max-w-[350px] lg:max-w-[350px]`}
-              style={{
-                textAlign: 'center',
-                borderColor: theme === 'dark' ? '#FFFFFF' : undefined,
-                backgroundColor: theme === 'dark' ? '#1A1A1A' : undefined
-              }}
-            >
-              <div className={`absolute w-3 h-3 ${theme === 'dark' ? 'bg-white' : (section.id === 1 ? 'bg-[#4E00FF]' : section.id === 2 ? 'bg-[#FF5100]' : 'bg-[#006600]')} -top-[6px] -left-[6px]`}></div>
-              <div className={`absolute w-3 h-3 ${theme === 'dark' ? 'bg-white' : (section.id === 1 ? 'bg-[#4E00FF]' : section.id === 2 ? 'bg-[#FF5100]' : 'bg-[#006600]')} -top-[6px] -right-[6px]`}></div>
-              <div className={`absolute w-3 h-3 ${theme === 'dark' ? 'bg-white' : (section.id === 1 ? 'bg-[#4E00FF]' : section.id === 2 ? 'bg-[#FF5100]' : 'bg-[#006600]')} -bottom-[6px] -left-[6px]`}></div>
-              <div className={`absolute w-3 h-3 ${theme === 'dark' ? 'bg-white' : (section.id === 1 ? 'bg-[#4E00FF]' : section.id === 2 ? 'bg-[#FF5100]' : 'bg-[#006600]')} -bottom-[6px] -right-[6px]`}></div>
-              <p className="text-xs md:text-sm font-semibold text-gray-600 dark:text-white mb-2">{section.category}</p>
-              <h3 className={`text-lg md:text-xl lg:text-2xl font-bold mb-3 md:mb-4 ${section.id === 1 ? 'text-[#4E00FF] dark:text-white' : section.id === 2 ? 'text-[#FF5100] dark:text-white' : 'text-[#006600] dark:text-white'}`}>{section.title}</h3>
-              <p className="text-xs md:text-sm text-gray-600 dark:text-white mb-4 md:mb-6 flex-grow">{section.description}</p>
-
-              <div className="bg-white dark:bg-white rounded-lg p-3 md:p-4 shadow-md flex-grow">
-                <div className="flex items-center justify-between text-gray-500 dark:text-gray-300 text-xs md:text-sm mb-3 md:mb-4">
-                  <span className="flex items-center dark:text-black">
-                    <span className='mr-2 dark:text-black text-xs md:text-sm'><IoHomeOutline /></span>
-                    <span className="text-xs md:text-sm">Home</span>
-                  </span>
-                  <span className='dark:text-black text-xs md:text-sm'>...</span>
-                </div>
-                <div className="space-y-1 md:space-y-2 border border-[#6248FF] p-2 md:p-3 rounded"
-                  style={{ borderColor: theme === 'dark' ? '#006600' : '#6248FF' }}
-                >
-                  {section.items.map((item, index) => (
-                    <div key={index} className="bg-gray-50 dark:bg-white rounded p-1 md:p-2 text-xs md:text-sm text-gray-700 dark:text-black border border-[#686868]"
-                      style={{
-                        borderColor: theme === 'dark' ? '#333333' : '#686868',
-                        color: theme === 'dark' ? '#000000' : undefined
-                      }}
-                    >
-                      <div className="flex items-center dark:text-black text-xs md:text-sm">
-                        {item}
-                      </div>
-                      {item !== '+ Section' && (
-                        <div className="h-1 md:h-2 bg-gray-200 dark:bg-gray-500 rounded mt-1 ml-2 md:ml-4"></div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-};
 
 const EditorSection = () => {
   const { theme } = useContext(ThemeContext);
@@ -405,7 +316,7 @@ const EditorSection = () => {
   const listItems = ["Start with a Prompt", "Website Details", "Let AI Do The Work", "Fine-Tune Your Design", "Edit Design", "Edit Design"];
 
   return (
-    <section className="py-12 md:py-16 lg:py-20 bg-white dark:bg-black transition-colors duration-300">
+    <section className="pb-8 md:pb-12 bg-transparent lg:pb-16 mt-[100px] md:mt-[250px] lg:mt-[400px] md:flex-col transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-16">
         <div className="flex flex-col md:flex:col md:text-center md:justify-between md:items-start mb-8 md:mb-12 lg:mb-16 lg:flex-row">
           <div className="mb-6 md:mb-0 text-center md:text-center w-full lg:text-start lg:w-[1300px]">
@@ -499,7 +410,7 @@ const Templates = () => {
   useGsapReveal(templateRef);
 
   return (
-    <section className="py-12 md:py-16 lg:py-20 bg-white dark:bg-black transition-colors duration-300">
+    <section className="py-12 md:py-16 lg:py-20 bg-transparent transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-16">
         <div className="text-center mb-8 md:mb-12 lg:mb-16">
           <p className="text-gray-500 dark:text-white text-xs md:text-sm font-medium mb-2">Template</p>
@@ -542,28 +453,24 @@ const FeaturesGrid = () => {
   useGsapReveal(featureRef);
 
   const features = [
-    { title: "AI-Powered Design", description: "Quickly create a website by describing your idea in plain language. From a simple prompt, the builder generates full websites.", borderColor: "border-[#FDB400]", bgColor: "bg-[#FFF9EA]", squareColor: "bg-[#FDB400]" },
-    { title: "Drag & Drop Editor", description: "Easily customize every element with our intuitive drag and drop interface. No coding required.", borderColor: "border-[#FF0004]", bgColor: "bg-[#FFF8F8]", squareColor: "bg-[#FF0004]" },
-    { title: "Responsive Templates", description: "Choose from hundreds of professionally designed templates that work perfectly on all devices.", borderColor: "border-[#003CFF]", bgColor: "bg-[#F5F7FF]", squareColor: "bg-[#003CFF]" },
-    { title: "SEO Optimization", description: "Built-in SEO tools help your website rank higher in search results and attract more visitors.", borderColor: "border-[#003CFF]", bgColor: "bg-[#F5F7FF]", squareColor: "bg-[#003CFF]" },
-    { title: "E-commerce Ready", description: "Complete online store functionality with payment processing, inventory management, and more.", borderColor: "border-[#FDB400]", bgColor: "bg-[#FFF9EA]", squareColor: "bg-[#FDB400]" },
-    { title: "Analytics Dashboard", description: "Track visitor behavior, conversion rates, and key metrics with our comprehensive analytics tools.", borderColor: "border-[#FF0004]", bgColor: "bg-[#FFF8F8]", squareColor: "bg-[#FF0004]" },
-    { title: "Custom Domains", description: "Connect your own domain name or get a free subdomain to establish your online presence.", borderColor: "border-[#FF0004]", bgColor: "bg-[#FFF8F8]", squareColor: "bg-[#FF0004]" },
-    { title: "24/7 Support", description: "Get help whenever you need it with our round-the-clock customer support team.", borderColor: "border-[#003CFF]", bgColor: "bg-[#F5F7FF]", squareColor: "bg-[#003CFF]" },
-    { title: "Fast Hosting", description: "Lightning-fast hosting with 99.9% uptime ensures your website is always available and performs great.", borderColor: "border-[#FDB400]", bgColor: "bg-[#FFF9EA]", squareColor: "bg-[#FDB400]" }
+    { title: "AI-Powered Design", description: "Quickly create a website by describing your idea in plain language. From a simple prompt, the builder generates full websites." },
+    { title: "Drag & Drop Editor", description: "Easily customize every element with our intuitive drag and drop interface. No coding required." },
+    { title: "Responsive Templates", description: "Choose from hundreds of professionally designed templates that work perfectly on all devices." },
+    { title: "SEO Optimization", description: "Built-in SEO tools help your website rank higher in search results and attract more visitors." },
+    { title: "E-commerce Ready", description: "Complete online store functionality with payment processing, inventory management, and more." },
+    { title: "Analytics Dashboard", description: "Track visitor behavior, conversion rates, and key metrics with our comprehensive analytics tools." },
+    { title: "Custom Domains", description: "Connect your own domain name or get a free subdomain to establish your online presence." },
+    { title: "24/7 Support", description: "Get help whenever you need it with our round-the-clock customer support team." },
+    { title: "Fast Hosting", description: "Lightning-fast hosting with 99.9% uptime ensures your website is always available and performs great." }
   ];
 
   return (
-    <div className="py-16 px-8 bg-white dark:bg-black transition-colors duration-300">
+    <div className="py-16 px-8 bg-transparent transition-colors duration-300">
       <div className="max-w-3xl mx-auto text-center mb-12">
         <p className="text-gray-700 dark:text-white">From Prompt to Published Website in One Platform</p>
         <h6 className="text-[40px] md:text-[40px] font-bold text-black dark:text-white">
-          Everything You Need to Create a <span className="relative inline-block border-2 border-blue-600 dark:border-white rounded px-5 text-blue-600 dark:text-white bg-[#F3F3FF] dark:bg-black">
+          Everything You Need to Create a <span className="relative inline-block dark:border-white rounded px-5 dark:text-white bg-transparent dark:bg-black">
             Website
-            <span className={`absolute w-2 h-2 ${theme === 'dark' ? 'bg-white' : 'bg-blue-600'} -top-1 -left-1`}></span>
-            <span className={`absolute w-2 h-2 ${theme === 'dark' ? 'bg-white' : 'bg-blue-600'} -top-1 -right-1`}></span>
-            <span className={`absolute w-2 h-2 ${theme === 'dark' ? 'bg-white' : 'bg-blue-600'} -bottom-1 -left-1`}></span>
-            <span className={`absolute w-2 h-2 ${theme === 'dark' ? 'bg-white' : 'bg-blue-600'} -bottom-1 -right-1`}></span>
           </span> With AI, From Start to Finish
         </h6>
       </div>
@@ -572,15 +479,26 @@ const FeaturesGrid = () => {
         {features.map((feature, index) => (
           <div
             key={index}
-            className={`relative p-6 border ${feature.borderColor} ${feature.bgColor} dark:bg-[#1A1A1A] dark:border-white hover:shadow-lg transition-shadow duration-300`}
+            className="
+              relative 
+              p-6 
+              border 
+              border-black 
+              bg-white 
+              dark:bg-[#1A1A1A]
+              hover:shadow-lg 
+              transition-shadow 
+              duration-300
+            "
           >
-            <div className={`absolute -top-1 -left-1 w-2 h-2 z-10 ${theme === 'dark' ? 'bg-white' : feature.squareColor}`}></div>
-            <div className={`absolute -top-1 -right-1 w-2 h-2 z-10 ${theme === 'dark' ? 'bg-white' : feature.squareColor}`}></div>
-            <div className={`absolute -bottom-1 -left-1 w-2 h-2 z-10 ${theme === 'dark' ? 'bg-white' : feature.squareColor}`}></div>
-            <div className={`absolute -bottom-1 -right-1 w-2 h-2 z-10 ${theme === 'dark' ? 'bg-white' : feature.squareColor}`}></div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">{feature.title}</h3>
-            <p className="text-gray-600 dark:text-white leading-relaxed">{feature.description}</p>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+              {feature.title}
+            </h3>
+            <p className="text-gray-600 dark:text-white leading-relaxed">
+              {feature.description}
+            </p>
           </div>
+
         ))}
       </div>
     </div>
@@ -610,17 +528,13 @@ const FAQ = () => {
   };
 
   return (
-    <section id="faq" className="py-20 bg-white dark:bg-black transition-colors duration-300">
+    <section id="faq" className="py-20 bg-transparent transition-colors duration-300">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <p className='text-center text-gray-700 dark:text-white'>FAQ's</p>
         <div className="text-center mb-16">
           <h2 className="text-xl md:text-4xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4 ">
             Frequently asked <span className="relative inline-block">
-              <span className="text-[#2E2F5B] dark:text-white border border-[#2E2F5B] dark:border-white bg-[#E9E9FF] dark:bg-[#1A1A1A] px-2 py-[0px] md:px-3 md:py-1 lg:px-3 lg:py-0">questions</span>
-              <div className={`absolute -top-[5px] -left-[2px] md:-top-[13px] md:-left-[5px] w-2 h-2 md:w-3 md:h-3 lg:-top-[11px] ${theme === 'dark' ? 'bg-white' : 'bg-[#2E2F5B]'}`}></div>
-              <div className={`absolute -top-[5px] -right-[2px] md:-top-[13px] md:-right-[5px] w-2 h-2 md:w-3 md:h-3 lg:-top-[11px] ${theme === 'dark' ? 'bg-white' : 'bg-[#2E2F5B]'}`}></div>
-              <div className={`absolute -bottom-[5px] -left-[2px] md:-bottom-[13px] md:-left-[5px] w-2 h-2 md:w-3 md:h-3 lg:-bottom-[11px] ${theme === 'dark' ? 'bg-white' : 'bg-[#2E2F5B]'}`}></div>
-              <div className={`absolute -bottom-[5px] -right-[2px] md:-bottom-[13px] md:-right-[5px] w-2 h-2 md:w-3 md:h-3 lg:-bottom-[11px] ${theme === 'dark' ? 'bg-white' : 'bg-[#2E2F5B]'}`}></div>
+              <span className="dark:text-white dark:border-white bg-transparent dark:bg-[#1A1A1A] px-2 py-[0px] md:px-3 md:py-1 lg:px-3 lg:py-0">questions</span>
             </span>
           </h2>
           <h2 className="text-xl md:text-4xl lg:text-4xl font-bold text-black dark:text-gray-300">
@@ -696,7 +610,7 @@ const Footer = () => {
   ];
 
   return (
-    <footer ref={footerRef} className="bg-gray-50 dark:bg-black border-t border-gray-200 dark:border-white transition-colors duration-300">
+    <footer ref={footerRef} className="bg-transparent  dark:border-white transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-6 border-t border-gray-200 dark:border-white">
           <div className="flex flex-row md:flex-row justify-between items-center w-full">
@@ -724,7 +638,7 @@ const Footer = () => {
 function Home() {
 
   const pageRef = useRef(null);
-
+  const { theme } = useContext(ThemeContext);
   useEffect(() => {
     gsap.fromTo(
       pageRef.current,
@@ -734,49 +648,48 @@ function Home() {
   }, []);
 
   return (
-    <div ref={pageRef} className="min-h-screen bg-white dark:bg-black transition-colors duration-300">
-      <div className="mx-8 md:mx-8 lg:mx-16 border-x border-black dark:border-white relative transition-colors duration-300">
+    <div
+      ref={pageRef}
+      className="min-h-full transition-colors duration-300"
+      style={{
+        backgroundImage: theme === "light" ? `url(${bgLight})` : "none",
+        backgroundColor: theme === "dark" ? "#0b0b0b" : "transparent",
+        backgroundSize: "cover",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+      }}
+    >
 
-        <div className="border-b border-black dark:border-white relative transition-colors duration-300">
-          <Navbar />
-        </div>
 
-        <div className="relative">
-          <Banner />
-          <div className="absolute -top-1 -left-1 w-2 h-2 bg-black dark:bg-white"></div>
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-black dark:bg-white"></div>
-        </div>
 
-        <div className="border-b border-black dark:border-white relative transition-colors duration-300">
-          <SectionBoxes />
-        </div>
+      <Navbar />
 
-        <div className="border-b border-black dark:border-white relative transition-colors duration-300">
-          <EditorSection />
-          <div className="absolute -top-1 -left-1 w-2 h-2 bg-black dark:bg-white"></div>
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-black dark:bg-white"></div>
-        </div>
-
-        <div className="border-b border-black dark:border-white relative transition-colors duration-300">
-          <Templates />
-          <div className="absolute -top-1 -left-1 w-2 h-2 bg-black dark:bg-white"></div>
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-black dark:bg-white"></div>
-        </div>
-
-        <div className="border-b border-black dark:border-white relative transition-colors duration-300">
-          <FeaturesGrid />
-          <div className="absolute -top-1 -left-1 w-2 h-2 bg-black dark:bg-white"></div>
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-black dark:bg-white"></div>
-        </div>
-
-        <div className="relative">
-          <FAQ />
-          <div className="absolute -top-1 -left-1 w-2 h-2 bg-black dark:bg-white"></div>
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-black dark:bg-white"></div>
-        </div>
-
-        <Footer />
+      <div className="relative">
+        <Banner />
       </div>
+
+      {/* <div className="relative">
+        <SectionBoxes />
+      </div> */}
+
+      <div className="relative">
+        <EditorSection />
+      </div>
+
+      <div className="relative">
+        <Templates />
+      </div>
+
+      <div className="relative">
+        <FeaturesGrid />
+      </div>
+
+      <div className="relative">
+        <FAQ />
+      </div>
+
+      <Footer />
     </div>
   );
 }
