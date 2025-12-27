@@ -13,7 +13,8 @@ const ProjectWorkspace = () => {
     const { theme } = useContext(ThemeContext);
     const isDark = theme === "dark";
     const [showGoalStep, setShowGoalStep] = useState(false);
-    const [language, setLanguage] = useState("Hindi");
+    const [language, setLanguage] = useState(null);
+
     const [prompt, setPrompt] = useState("");
     const [loading, setLoading] = useState(false);
     const [firstQuestion, setFirstQuestion] = useState(null);
@@ -37,7 +38,7 @@ const ProjectWorkspace = () => {
                     },
                     body: JSON.stringify({
                         prompt,
-                        language: language.toLowerCase(),
+                        language: language || "english",
                     }),
                 }
             );

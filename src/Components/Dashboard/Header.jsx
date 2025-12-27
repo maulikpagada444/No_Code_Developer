@@ -3,10 +3,11 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { FiUser, FiLogOut, FiGrid } from "react-icons/fi";
 import Cookies from "js-cookie";
 import { ThemeContext } from "../../ThemeProvider.jsx";
+import { FiSun, FiMoon } from "react-icons/fi";
 
 const Header = () => {
-    const { theme } = useContext(ThemeContext);
     const navigate = useNavigate();
+    const { theme, setThemeMode } = useContext(ThemeContext);
 
     const username = Cookies.get("username") || "User";
     const [open, setOpen] = useState(false);
@@ -58,6 +59,11 @@ const Header = () => {
         }
     };
 
+    const toggleTheme = () => {
+        setThemeMode(theme === "dark" ? "light" : "dark");
+    };
+
+
 
     return (
         <>
@@ -78,76 +84,120 @@ const Header = () => {
 
                     <nav className="flex gap-2 text-sm font-medium">
                         {[
-                            { name: "Dashboard", path: "/dashboard" },
+                            { name: "Dashboard", path: "/dashboard", end: true },
                             { name: "Project", path: "/dashboard/project" },
                             { name: "Setting", path: "/dashboard/setting" },
                         ].map((item) => (
                             <NavLink
                                 key={item.name}
                                 to={item.path}
+                                end={item.end}   // ✅ IMPORTANT LINE
                                 className={({ isActive }) =>
-                                    isActive
+                                    `
+                                    px-4 py-1.5 rounded-lg transition
+                                    ${isActive
                                         ? theme === "dark"
-                                            ? "px-4 py-1.5 rounded-lg bg-white/10"
-                                            : "px-4 py-1.5 rounded-lg bg-gray-200"
-                                        : "px-4 py-1.5 text-gray-400 hover:text-black"
+                                            ? "bg-white/15 text-white"
+                                            : "bg-gray-200 text-black"
+                                        : theme === "dark"
+                                            ? "text-gray-400 hover:text-white hover:bg-white/10"
+                                            : "text-gray-500 hover:text-black hover:bg-gray-100"
+                                    }
+                                `
                                 }
                             >
                                 {item.name}
                             </NavLink>
+
+
                         ))}
                     </nav>
 
-                    <div className="relative" ref={dropdownRef}>
-                        <button
-                            onClick={() => setOpen(!open)}
-                            className={`
-                            flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm
-                            border backdrop-blur
-                            ${theme === "dark"
-                                    ? "bg-white/5 border-white/10 text-white"
-                                    : "bg-white border-gray-300 text-gray-700"
-                                }
-                        `}
-                        >
-                            {username}
-                            <FiUser />
-                        </button>
+                    <div className="flex items-center gap-3">
 
-                        {open && (
-                            <div
+                        {/* 👤 USER DROPDOWN */}
+                        <div className="relative" ref={dropdownRef}>
+                            <button
+                                onClick={() => setOpen(!open)}
                                 className={`
-                                absolute right-0 mt-2 w-44 rounded-xl shadow-lg border
-                                ${theme === "dark"
-                                        ? "bg-[#111] border-white/10"
-                                        : "bg-white border-gray-200"
-                                    }
-                            `}
+                                    flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm
+                                    border backdrop-blur
+                                    ${theme === "dark"
+                                        ? "bg-white/5 border-white/10 text-white"
+                                        : "bg-white border-gray-300 text-gray-700"}
+                                `}
                             >
-                                <button
-                                    onClick={() => {
-                                        navigate("/dashboard");
-                                        setOpen(false);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100"
-                                >
-                                    <FiGrid />
-                                    Dashboard
-                                </button>
+                                {username}
+                                <FiUser />
+                            </button>
 
-                                <button
-                                    onClick={() => {
-                                        setShowLogoutConfirm(true);
-                                        setOpen(false);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-gray-100"
+                            {open && (
+                                <div
+                                    className={`
+            absolute right-0 mt-2 w-56 rounded-xl shadow-lg border overflow-hidden
+            ${theme === "dark"
+                                            ? "bg-[#111] border-white/10 text-white"
+                                            : "bg-white border-gray-200 text-black"}
+        `}
                                 >
-                                    <FiLogOut />
-                                    Logout
-                                </button>
-                            </div>
-                        )}
+
+                                    {/* Dashboard */}
+                                    <button
+                                        onClick={() => {
+                                            navigate("/dashboard");
+                                            setOpen(false);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-white/10"
+                                    >
+                                        <FiGrid />
+                                        Dashboard
+                                    </button>
+
+                                    {/* 🌗 THEME TOGGLE */}
+                                    <div className="flex items-center justify-between px-4 py-3">
+                                        <div className="flex items-center gap-3 text-sm">
+                                            {theme === "dark" ? <FiMoon /> : <FiSun />}
+                                            <span>Dark Mode</span>
+                                        </div>
+
+                                        {/* Toggle Switch */}
+                                        <button
+                                            onClick={toggleTheme}
+                                            className={`
+                                                w-11 h-6 rounded-full relative transition
+                                                ${theme === "dark" ? "bg-blue-600" : "bg-gray-300"}
+                                            `}
+                                        >
+                                            <span
+                                                className={`
+                                                    absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform
+                                                    ${theme === "dark" ? "translate-x-5" : "translate-x-0"}
+                                                `}
+                                            />
+                                        </button>
+                                    </div>
+
+                                    {/* Divider */}
+                                    <div className="h-px bg-gray-200 dark:bg-white/10" />
+
+                                    {/* Logout */}
+                                    <button
+                                        onClick={() => {
+                                            setShowLogoutConfirm(true);
+                                            setOpen(false);
+                                        }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+                                    >
+                                        <FiLogOut />
+                                        Logout
+                                    </button>
+                                </div>
+                            )}
+
+
+                        </div>
                     </div>
+
 
                 </div>
             </header>
