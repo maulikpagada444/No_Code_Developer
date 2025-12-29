@@ -46,15 +46,12 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./ThemeProvider";
 
-/* PUBLIC (OPEN FOR ALL) */
 import Home from "./Components/Home/Home";
 
-/* AUTH (ONLY LOGGED OUT USERS) */
 import SignUpFlow from "./Components/SignUp/SignUpFlow";
 import SignInFlow from "./Components/SignIn/SignInFlow";
 import SignOtp from "./Components/SignUp/sign-otp";
 
-/* PROTECTED (LOGIN REQUIRED) */
 import Dashboard from "./Components/Dashboard/Dashboard";
 import Project from "./Components/Dashboard/Project";
 import Setting from "./Components/Dashboard/Setting";

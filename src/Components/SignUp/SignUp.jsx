@@ -1,27 +1,326 @@
+// import React, { useState, useContext } from "react";
+// import { Link, useNavigate } from "react-router-dom";
+// import {
+//     FaEye,
+//     FaEyeSlash,
+//     FaGoogle,
+//     FaFacebookF,
+//     FaInstagram,
+//     FaTwitter,
+//     FaYoutube,
+//     FaLinkedin,
+//     FaRegUser,
+// } from "react-icons/fa";
+// import { HiOutlineMail } from "react-icons/hi";
+// import { MdLockOutline } from "react-icons/md";
+
+// import bgLight from "../../../Public/bg.png";
+// import bgDark from "../../../Public/bg_black.png";
+// import { ThemeContext } from "../../ThemeProvider.jsx";
+// import AppAlert from "../common/AppAlert.jsx";
+
+// const SignUp = ({ setStep, setEmail }) => {
+//     const { theme } = useContext(ThemeContext);
+//     const navigate = useNavigate();
+
+//     const [formData, setFormData] = useState({
+//         username: "",
+//         email: "",
+//         password: "",
+//         confirm_password: "",
+//     });
+
+//     const [showPassword, setShowPassword] = useState(false);
+//     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+//     const [loading, setLoading] = useState(false);
+
+//     const [alert, setAlert] = useState({
+//         open: false,
+//         message: "",
+//         severity: "success",
+//         title: "",
+//     });
+
+//     const showAlert = (message, severity = "error", title = "") => {
+//         setAlert({ open: true, message, severity, title });
+//     };
+
+//     const handleChange = (e) => {
+//         setFormData({ ...formData, [e.target.name]: e.target.value });
+//     };
+
+//     /* ---------------- MANUAL SIGNUP ---------------- */
+//     const handleManualSignup = async (e) => {
+//         e.preventDefault();
+
+//         if (formData.password !== formData.confirm_password) {
+//             showAlert("Passwords do not match", "warning");
+//             return;
+//         }
+
+//         try {
+//             setLoading(true);
+
+//             const response = await fetch(
+//                 `${import.meta.env.VITE_API_BASE_URL}/auth/signup`,
+//                 {
+//                     method: "POST",
+//                     headers: { "Content-Type": "application/json" },
+//                     body: JSON.stringify({
+//                         username: formData.username,
+//                         email: formData.email,
+//                         password: formData.password,
+//                         confirm_password: formData.confirm_password,
+//                         login_method: "manual",
+//                         device_id: "device-123",
+//                         device_name: "Web Browser",
+//                         location: "Surat",
+//                     }),
+//                 }
+//             );
+
+//             const data = await response.json();
+
+//             if (!response.ok || data.status === false) {
+//                 showAlert(
+//                     data?.message || "Signup failed",
+//                     "error",
+//                     "Registration Failed"
+//                 );
+//                 return;
+//             }
+
+//             // ✅ IMPORTANT: save alert for OTP screen
+//             sessionStorage.setItem(
+//                 "signup_alert",
+//                 JSON.stringify({
+//                     message: "Account created successfully. Please verify OTP.",
+//                     severity: "success",
+//                     title: "Signup Successful",
+//                 })
+//             );
+
+//             setEmail(formData.email);
+//             setStep(2); // 🔥 ONLY step number
+
+//         } catch (err) {
+//             showAlert(
+//                 "Server not reachable. Please try again later.",
+//                 "error",
+//                 "Network Error"
+//             );
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
+
+//     return (
+//         <>
+//             <div
+//                 className="min-h-screen flex items-center justify-center px-4"
+//                 style={{
+//                     backgroundImage: `url(${theme === "dark" ? bgDark : bgLight})`,
+//                     backgroundColor: theme === "dark" ? "#000000" : "#f6f6f6",
+//                     backgroundSize: "cover",
+//                     backgroundPosition: "center",
+//                 }}
+//             >
+//                 {/* Glow */}
+//                 <div
+//                     className="absolute rounded-[100%] pointer-events-none z-0"
+//                     style={{
+//                         width: "990px",
+//                         height: "562px",
+//                         top: "-281px",
+//                         left: "48%",
+//                         transform: "translateX(-50%)",
+//                         background: "rgba(255,255,255,0.15)",
+//                         filter: "blur(120px)",
+//                     }}
+//                 />
+
+//                 <div className="w-full max-w-8xl flex justify-center mx-auto grid grid-cols-1 lg:grid-cols-[520px_100px] gap-10 items-center">
+
+//                     {/* CARD */}
+//                     <div
+//                         className={`rounded-[24px] px-10 py-12 border shadow-[0_30px_80px_rgba(0,0,0,0.08)]
+//                     ${theme === "dark"
+//                                 ? "bg-black border-gray-700 text-white"
+//                                 : "bg-white border-gray-200 text-gray-900"
+//                             }`}
+//                     >
+//                         <h2 className="text-2xl font-semibold text-center">
+//                             Create An Account
+//                         </h2>
+
+//                         <p className={`text-sm text-center mt-2 mb-8
+//                             ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+//                             Kindly fill in your details below to create an account
+//                         </p>
+
+//                         <form className="space-y-5" onSubmit={handleManualSignup}>
+//                             <Input
+//                                 icon={<FaRegUser />}
+//                                 placeholder="Enter Your Username"
+//                                 theme={theme}
+//                                 name="username"
+//                                 onChange={handleChange}
+//                             />
+
+//                             <Input
+//                                 icon={<HiOutlineMail />}
+//                                 type="email"
+//                                 placeholder="Enter Your Email"
+//                                 theme={theme}
+//                                 name="email"
+//                                 onChange={handleChange}
+//                             />
+
+//                             <Input
+//                                 icon={<MdLockOutline />}
+//                                 type={showPassword ? "text" : "password"}
+//                                 placeholder="Enter Your Password"
+//                                 theme={theme}
+//                                 name="password"
+//                                 onChange={handleChange}
+//                                 rightIcon={
+//                                     <button type="button" onClick={() => setShowPassword(!showPassword)}>
+//                                         {showPassword ? <FaEyeSlash /> : <FaEye />}
+//                                     </button>
+//                                 }
+//                             />
+
+//                             <Input
+//                                 icon={<MdLockOutline />}
+//                                 type={showConfirmPassword ? "text" : "password"}
+//                                 placeholder="Confirm Password"
+//                                 theme={theme}
+//                                 name="confirm_password"
+//                                 onChange={handleChange}
+//                                 rightIcon={
+//                                     <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+//                                         {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+//                                     </button>
+//                                 }
+//                             />
+
+//                             <button
+//                                 type="submit"
+//                                 disabled={loading}
+//                                 className={`w-full py-3 rounded-full border font-medium transition
+//                                 flex items-center justify-center gap-2
+//                                 ${theme === "dark"
+//                                         ? "bg-black border-white text-white hover:bg-white hover:text-black"
+//                                         : "bg-white border-gray-300 hover:shadow-md"
+//                                     }
+//                                 ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
+//                             >
+//                                 {loading && (
+//                                     <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+//                                 )}
+//                                 {loading ? "Signing up..." : "Sign Up"}
+//                             </button>
+
+//                             <p className={`text-center text-sm
+//                                 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+//                                 Already have an account?
+//                                 <Link to="/signin" className="ml-1 font-semibold">
+//                                     Sign In
+//                                 </Link>
+//                             </p>
+//                         </form>
+//                     </div>
+//                     <div className="flex flex-col items-center gap-4">
+//                         <p className="text-xs tracking-widest font-semibold text-gray-500">FOLLOW:-</p>
+//                         {[FaFacebookF, FaInstagram, FaTwitter, FaYoutube, FaLinkedin].map((Icon, i) => (
+//                             <button
+//                                 key={i}
+//                                 className={`w-10 h-10 rounded-xl border flex items-center justify-center transition
+//                             ${theme === "dark"
+//                                         ? "bg-black border-gray-600 text-gray-300"
+//                                         : "bg-white border-gray-300 text-gray-600"
+//                                     }`}
+//                             >
+//                                 <Icon />
+//                             </button>
+//                         ))}
+//                     </div>
+//                 </div>
+//             </div>
+
+//             {/* 🔔 ALERT */}
+//             <AppAlert
+//                 open={alert.open}
+//                 message={alert.message}
+//                 severity={alert.severity}
+//                 title={alert.title}
+//                 onClose={() =>
+//                     setAlert(prev => ({ ...prev, open: false }))
+//                 }
+//             />
+//         </>
+//     );
+// };
+
+// const Input = ({ icon, rightIcon, theme, ...props }) => (
+//     <div
+//         className={`flex items-center gap-3 px-4 py-3 rounded-2xl border
+//         ${theme === "dark"
+//                 ? "border-gray-600 focus-within:border-white"
+//                 : "border-gray-300 focus-within:border-gray-500"
+//             }`}
+//     >
+//         <span className="text-gray-400">{icon}</span>
+//         <input
+//             {...props}
+//             required
+//             className={`w-full text-sm bg-transparent outline-none
+//             ${theme === "dark"
+//                     ? "text-white placeholder-gray-500"
+//                     : "text-black placeholder-gray-400"
+//                 }`}
+//         />
+//         {rightIcon && <span className="text-gray-400">{rightIcon}</span>}
+//     </div>
+// );
+
+// export default SignUp;
+
+
+
+
+
+
+
+
+
+
 import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
     FaEye,
     FaEyeSlash,
-    FaGoogle,
     FaFacebookF,
     FaInstagram,
     FaTwitter,
     FaYoutube,
     FaLinkedin,
     FaRegUser,
+    FaGoogle,
 } from "react-icons/fa";
 import { HiOutlineMail } from "react-icons/hi";
 import { MdLockOutline } from "react-icons/md";
-
 import bgLight from "../../../Public/bg.png";
 import bgDark from "../../../Public/bg_black.png";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import AppAlert from "../common/AppAlert.jsx";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
+import Cookies from "js-cookie";
 
 const SignUp = ({ setStep, setEmail }) => {
     const { theme } = useContext(ThemeContext);
-    const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
         username: "",
@@ -29,7 +328,7 @@ const SignUp = ({ setStep, setEmail }) => {
         password: "",
         confirm_password: "",
     });
-
+    const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -113,6 +412,62 @@ const SignUp = ({ setStep, setEmail }) => {
             setLoading(false);
         }
     };
+
+
+
+    /* ---------------- GOOGLE SIGNUP ---------------- */
+    const handleGoogleSignup = async (credentialResponse) => {
+        try {
+            const decoded = jwtDecode(credentialResponse.credential);
+
+            const response = await fetch(
+                `${import.meta.env.VITE_API_BASE_URL}/auth/google`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        username: decoded.name,
+                        email: decoded.email,
+                        login_method: "google",
+                        social_id: decoded.sub,
+                        picture: decoded.picture,
+                        device_id: "device-123",
+                        device_name: "Web Browser",
+                        location: "Surat",
+                    }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || data.status === false) {
+                showAlert(data?.message || "Google signup failed", "error");
+                return;
+            }
+
+            const username =
+                data?.data?.username ||
+                data?.data?.user?.username ||
+                decoded.name; // 🔥 fallback
+
+            Cookies.set("access_token", data.data.access_token);
+            Cookies.set("refresh_token", data.data.refresh_token);
+            Cookies.set("username", username); // ✅ FIXED
+
+            navigate("/dashboard", {
+                state: {
+                    alert: {
+                        message: `${username} successfully logged in`,
+                        severity: "success",
+                    },
+                },
+            });
+
+        } catch (err) {
+            showAlert(err.message || "Google signup failed", "error");
+        }
+    };
+
 
 
     return (
@@ -221,6 +576,22 @@ const SignUp = ({ setStep, setEmail }) => {
                                 )}
                                 {loading ? "Signing up..." : "Sign Up"}
                             </button>
+
+                            <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-gray-400">
+                                <span className="flex-1 h-px bg-gray-300/50" />
+                                Or Continue with
+                                <span className="flex-1 h-px bg-gray-300/50" />
+                            </div>
+
+                            <div className="flex justify-center">
+                                <GoogleLogin
+                                    onSuccess={handleGoogleSignup}
+                                    onError={() =>
+                                        showAlert("Google login failed", "error", "Google Error")
+                                    }
+                                />
+                            </div>
+
 
                             <p className={`text-center text-sm
                                 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>

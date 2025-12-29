@@ -18,6 +18,8 @@ import bgLight from "../../../Public/bg.png";
 import bgDark from "../../../Public/bg_black.png";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import AppAlert from "../common/AppAlert.jsx";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 
 const SignInScreen = ({ setStep, setEmail }) => {
     const navigate = useNavigate();
@@ -110,6 +112,60 @@ const SignInScreen = ({ setStep, setEmail }) => {
             showAlert(err.message, "error");
         } finally {
             setLoading(false);
+        }
+    };
+
+
+    /* ---------------- GOOGLE SIGNUP ---------------- */
+    const handleGoogleSignup = async (credentialResponse) => {
+        try {
+            const decoded = jwtDecode(credentialResponse.credential);
+
+            const response = await fetch(
+                `${import.meta.env.VITE_API_BASE_URL}/auth/google`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        username: decoded.name,
+                        email: decoded.email,
+                        login_method: "google",
+                        social_id: decoded.sub,
+                        picture: decoded.picture,
+                        device_id: "device-123",
+                        device_name: "Web Browser",
+                        location: "Surat",
+                    }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || data.status === false) {
+                showAlert(data?.message || "Google signup failed", "error");
+                return;
+            }
+
+            const username =
+                data?.data?.username ||
+                data?.data?.user?.username ||
+                decoded.name; // 🔥 fallback
+
+            Cookies.set("access_token", data.data.access_token);
+            Cookies.set("refresh_token", data.data.refresh_token);
+            Cookies.set("username", username); // ✅ FIXED
+
+            navigate("/dashboard", {
+                state: {
+                    alert: {
+                        message: `${username} successfully logged in`,
+                        severity: "success",
+                    },
+                },
+            });
+
+        } catch (err) {
+            showAlert(err.message || "Google signup failed", "error");
         }
     };
 
@@ -217,17 +273,14 @@ const SignInScreen = ({ setStep, setEmail }) => {
                                 <span className="flex-1 h-px bg-gray-300/50" />
                             </div>
 
-                            <button
-                                type="button"
-                                className={`w-full flex items-center justify-center gap-3 py-3 rounded-xl
-                                ${theme === "dark"
-                                        ? "bg-gray-800 hover:bg-gray-700 text-white"
-                                        : "bg-gray-100 hover:bg-gray-200"
-                                    }`}
-                            >
-                                <FaGoogle className="text-red-500" />
-                                Continue With Google
-                            </button>
+                            <div className="flex justify-center">
+                                <GoogleLogin
+                                    onSuccess={handleGoogleSignup}
+                                    onError={() =>
+                                        showAlert("Google login failed", "error", "Google Error")
+                                    }
+                                />
+                            </div>
 
                             <p className={`text-center text-sm
                                 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
