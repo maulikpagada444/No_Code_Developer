@@ -1,3 +1,279 @@
+// import React, { useContext, useState } from "react";
+// import { ThemeContext } from "../../ThemeProvider.jsx";
+// import Header from "./Header.jsx";
+// import Cookies from "js-cookie";
+
+// import bgLight from "../../../Public/bg.png";
+// import bgDark from "../../../Public/bg_black.png";
+// import ColorSelection from "./ColorSelection.jsx";
+
+// /* ---------------- CONFIG ---------------- */
+// const OPTION_TYPES = ["options", "optional", "select", "radio"];
+
+// const GoalStepModal = ({ onClose, firstQuestion }) => {
+//     const { theme } = useContext(ThemeContext);
+//     const isDark = theme === "dark";
+
+//     const [question, setQuestion] = useState(firstQuestion);
+//     const [selected, setSelected] = useState(null);
+//     const [textAnswer, setTextAnswer] = useState("");
+//     const [loading, setLoading] = useState(false);
+//     const [isFinished, setIsFinished] = useState(false);
+
+//     if (!question) return null;
+
+//     /* ---------------- TYPE NORMALIZATION ---------------- */
+//     const questionType = question?.type;
+
+//     const optionList =
+//         question?.options ||
+//         question?.optional?.options ||
+//         null;
+
+//     const isOptionType =
+//         OPTION_TYPES.includes(questionType) &&
+//         Array.isArray(optionList);
+
+//     /* ---------------- CONTINUE ---------------- */
+//     const handleContinue = async () => {
+//         const answer =
+//             questionType === "text"
+//                 ? textAnswer
+//                 : selected;
+
+//         if (!answer) return;
+
+//         setLoading(true);
+
+//         try {
+//             const res = await fetch(
+//                 `${import.meta.env.VITE_API_BASE_URL}/recommendation/next-question`,
+//                 {
+//                     method: "POST",
+//                     headers: {
+//                         "Content-Type": "application/json",
+//                         Authorization: `Bearer ${Cookies.get("access_token")}`,
+//                     },
+//                     body: JSON.stringify({
+//                         session_id: Cookies.get("session_id"),
+//                         question_id: question.id,
+//                         answer,
+//                     }),
+//                 }
+//             );
+
+//             const data = await res.json();
+//             console.log("⬅️ Next Question:", data);
+
+//             const nextQuestion =
+//                 data?.next_question ||
+//                 data?.question ||
+//                 data?.questions?.[0] ||
+//                 null;
+
+//             if (nextQuestion?.id) {
+//                 setQuestion(nextQuestion);
+//                 setSelected(null);
+//                 setTextAnswer("");
+//                 return;
+//             }
+
+//             if (data?.completed === true) {
+//                 setIsFinished(true);
+//             }
+//         } catch (err) {
+//             console.error("❌ Next Question Error:", err);
+//         } finally {
+//             setLoading(false);
+//         }
+//     };
+
+//     /* ---------------- FINISHED SCREEN ---------------- */
+//     if (isFinished) {
+//         return (
+//             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+//                 <div className="bg-white rounded-2xl p-10 text-center">
+//                     <h2 className="text-2xl font-semibold mb-4">
+//                         ✅ Setup Completed
+//                     </h2>
+//                     <button
+//                         onClick={onClose}
+//                         className="mt-4 px-6 py-2 border rounded-full hover:bg-black hover:text-white transition"
+//                     >
+//                         Go to Workspace
+//                     </button>
+//                 </div>
+//             </div>
+//         );
+//     }
+
+//     return (
+//         <div
+//             className="fixed inset-0 z-50 flex flex-col"
+//             style={{
+//                 backgroundImage: `url(${isDark ? bgDark : bgLight})`,
+//                 backgroundSize: "cover",
+//                 backgroundPosition: "center",
+//             }}
+//         >
+//             <Header />
+
+//             {/* GRID */}
+//             <div
+//                 className="absolute inset-0 pointer-events-none
+//                 bg-[linear-gradient(rgba(0,0,0,0.04)_1px,transparent_1px),
+//                 linear-gradient(90deg,rgba(0,0,0,0.04)_1px,transparent_1px)]
+//                 bg-[size:40px_40px]"
+//             />
+
+//             <div className="relative z-10 flex flex-1 items-center justify-center px-6">
+//                 <div
+//                     className={`w-full max-w-5xl rounded-[28px] p-12 border backdrop-blur-xl
+//                     shadow-[0_40px_100px_rgba(0,0,0,0.25)]
+//                     ${isDark
+//                         ? "bg-black/70 border-white/10 text-white"
+//                         : "bg-white border-gray-300 text-black"
+//                     }`}
+//                 >
+//                     {/* TOP */}
+//                     <div className="flex justify-between text-xs mb-6 opacity-70">
+//                         <span>INITIALIZING ENGINE......</span>
+//                         <span>STEP</span>
+//                     </div>
+
+//                     <div className={`h-px mb-10 ${isDark ? "bg-white/10" : "bg-gray-300"}`} />
+
+//                     {/* QUESTION */}
+//                     <div className="text-center mb-12">
+//                         <h2 className="text-2xl font-semibold mb-2">
+//                             {question.question}
+//                         </h2>
+//                         {question._topic_label && (
+//                             <p className="text-sm opacity-70">
+//                                 {question._topic_label}
+//                             </p>
+//                         )}
+//                     </div>
+
+//                     {/* ---------------- OPTION QUESTIONS ---------------- */}
+//                     {isOptionType && (
+//                         <div className="grid md:grid-cols-3 gap-10 mb-16">
+//                             {optionList.map((opt, i) => {
+//                                 const value = typeof opt === "object" ? opt.value : opt;
+//                                 const label = typeof opt === "object" ? opt.label : opt;
+
+//                                 return (
+//                                     <div
+//                                         key={i}
+//                                         onClick={() => setSelected(value)}
+//                                         className={`rounded-2xl p-8 text-center cursor-pointer border transition
+//                                             ${selected === value
+//                                                 ? isDark
+//                                                     ? "border-white bg-white/10"
+//                                                     : "border-black shadow-md"
+//                                                 : isDark
+//                                                     ? "border-white/10 hover:bg-white/5"
+//                                                     : "border-gray-300 hover:bg-gray-50"
+//                                             }`}
+//                                     >
+//                                         <h3 className="font-medium">{label}</h3>
+//                                     </div>
+//                                 );
+//                             })}
+//                         </div>
+//                     )}
+
+//                     {/* ---------------- TEXT ---------------- */}
+//                     {questionType === "text" && (
+//                         <textarea
+//                             rows="6"
+//                             value={textAnswer}
+//                             onChange={(e) => setTextAnswer(e.target.value)}
+//                             placeholder="Type your answer here..."
+//                             className={`w-full rounded-xl border px-5 py-4 mb-16 resize-none bg-transparent outline-none
+//                                 ${isDark ? "border-white/10" : "border-gray-300"}`}
+//                         />
+//                     )}
+
+//                     {/* ---------------- YES / NO ---------------- */}
+//                     {questionType === "yesno" && (
+//                         <div className="flex justify-center gap-8 mb-16">
+//                             {["Yes", "No"].map((val) => (
+//                                 <button
+//                                     key={val}
+//                                     onClick={() => setSelected(val)}
+//                                     className={`px-12 py-4 rounded-2xl text-lg font-medium border transition
+//                                         ${selected === val
+//                                             ? isDark
+//                                                 ? "bg-white text-black border-white"
+//                                                 : "bg-black text-white border-black"
+//                                             : isDark
+//                                                 ? "border-white/10 hover:bg-white/5"
+//                                                 : "border-gray-300 hover:bg-gray-50"
+//                                         }`}
+//                                 >
+//                                     {val}
+//                                 </button>
+//                             ))}
+//                         </div>
+//                     )}
+
+//                     {/* ---------------- SPECIAL TYPES ---------------- */}
+//                     {["color-matrix", "modules-selection"].includes(questionType) && (
+//                         <ColorSelection
+//                             stepType={questionType}
+//                             options={question.options}
+//                             isDark={isDark}
+//                             selected={selected}
+//                             setSelected={setSelected}
+//                         />
+//                     )}
+
+//                     {/* FOOTER */}
+//                     <div className="flex justify-end">
+//                         <button
+//                             disabled={
+//                                 loading ||
+//                                 (questionType === "text" && !textAnswer) ||
+//                                 (questionType !== "text" && !selected)
+//                             }
+//                             onClick={handleContinue}
+//                             className={`px-10 py-2.5 rounded-full border transition
+//                                 ${selected || textAnswer
+//                                     ? isDark
+//                                         ? "border-white hover:bg-white hover:text-black"
+//                                         : "border-black hover:bg-black hover:text-white"
+//                                     : "opacity-40 cursor-not-allowed border-gray-400"
+//                                 }`}
+//                         >
+//                             {loading ? "Loading..." : "Continue"}
+//                         </button>
+//                     </div>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
+
+// export default GoalStepModal;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import React, { useContext, useState } from "react";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import Header from "./Header.jsx";
@@ -5,38 +281,50 @@ import Cookies from "js-cookie";
 
 import bgLight from "../../../Public/bg.png";
 import bgDark from "../../../Public/bg_black.png";
-import ColorSelection from "./ColorSelection.jsx";
+import { useNavigate } from "react-router-dom";
 
-const GoalStepModal = ({ onClose, firstQuestion }) => {
+/* ---------------- CONFIG ---------------- */
+const SINGLE_OPTION_TYPES = ["radio", "select", "dropdown"];
+const MULTI_OPTION_TYPES = ["checkbox"];
+
+const GoalStepModal = ({ firstQuestion, onComplete }) => {
+    const navigate = useNavigate();
     const { theme } = useContext(ThemeContext);
     const isDark = theme === "dark";
 
     const [question, setQuestion] = useState(firstQuestion);
     const [selected, setSelected] = useState(null);
+    const [multiSelected, setMultiSelected] = useState([]);
     const [textAnswer, setTextAnswer] = useState("");
     const [loading, setLoading] = useState(false);
-    const [isFinished, setIsFinished] = useState(false);
 
-    /* 🔹 SAFE OPTION LIST */
-    const optionList =
-        question?.options ||
-        question?.optional?.options ||
-        null;
+    if (!question) return null;
 
-    /* 🔹 OPTION TYPE DETECTION */
-    const isOptionType =
-        ["options", "color", "optional", "select"].includes(question?.type) ||
-        Array.isArray(optionList);
+    const questionType = question.type;
+    const optionList = question?.options || question?.optional?.options || [];
 
+    /* ---------------- HELPERS ---------------- */
+    const toggleCheckbox = (value) => {
+        setMultiSelected((prev) =>
+            prev.includes(value)
+                ? prev.filter((v) => v !== value)
+                : [...prev, value]
+        );
+    };
+
+    /* ---------------- CONTINUE ---------------- */
     const handleContinue = async () => {
-        if (!question) return;
+        let answer = null;
 
-        const answer =
-            question.type === "text"
-                ? textAnswer
-                : selected;
+        if (questionType === "checkbox") {
+            answer = multiSelected;
+        } else if (["text", "textarea", "number", "date"].includes(questionType)) {
+            answer = textAnswer;
+        } else {
+            answer = selected;
+        }
 
-        if (!answer) return;
+        if (!answer || (Array.isArray(answer) && answer.length === 0)) return;
 
         setLoading(true);
 
@@ -58,27 +346,28 @@ const GoalStepModal = ({ onClose, firstQuestion }) => {
             );
 
             const data = await res.json();
-            console.log("⬅️ Next-question response:", data);
+            console.log("⬅️ Next Question:", data);
+
 
             const nextQuestion =
                 data?.next_question ||
-                data?.questions?.[0] ||
                 data?.question ||
+                data?.questions?.[0] ||
                 null;
 
             if (nextQuestion?.id) {
                 setQuestion(nextQuestion);
                 setSelected(null);
+                setMultiSelected([]);
                 setTextAnswer("");
                 return;
             }
 
             if (data?.completed === true) {
-                setIsFinished(true);
-                return;
+                onComplete();
             }
 
-            console.warn("⚠️ Unexpected backend response:", data);
+
         } catch (err) {
             console.error("❌ Next Question Error:", err);
         } finally {
@@ -86,64 +375,25 @@ const GoalStepModal = ({ onClose, firstQuestion }) => {
         }
     };
 
-    /* ---------------- FINISHED SCREEN ---------------- */
-    if (isFinished) {
-        return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-                <div className="bg-white rounded-2xl p-10 text-center">
-                    <h2 className="text-2xl font-semibold mb-4">
-                        ✅ Setup Completed
-                    </h2>
-                    <button
-                        onClick={onClose}
-                        className="mt-4 px-6 py-2 border rounded-full hover:bg-black hover:text-white transition"
-                    >
-                        Go to Workspace
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    if (!question) return null;
-
     return (
         <div
-            className="fixed inset-0 z-50 overflow-hidden flex flex-col"
+            className="fixed inset-0 z-50 flex flex-col"
             style={{
                 backgroundImage: `url(${isDark ? bgDark : bgLight})`,
-                backgroundColor: isDark ? "#000" : "#f6f6f6",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
             }}
         >
             <Header />
 
-            {/* GRID */}
-            <div
-                className="absolute inset-0 pointer-events-none
-                bg-[linear-gradient(rgba(0,0,0,0.04)_1px,transparent_1px),
-                linear-gradient(90deg,rgba(0,0,0,0.04)_1px,transparent_1px)]
-                bg-[size:40px_40px]"
-            />
-
             <div className="relative z-10 flex flex-1 items-center justify-center px-6">
                 <div
                     className={`w-full max-w-5xl rounded-[28px] p-12 border backdrop-blur-xl
-                        shadow-[0_40px_100px_rgba(0,0,0,0.25)]
-                        ${isDark
+                    ${isDark
                             ? "bg-black/70 border-white/10 text-white"
                             : "bg-white border-gray-300 text-black"
                         }`}
                 >
-                    {/* TOP */}
-                    <div className="flex justify-between text-xs mb-6 opacity-70">
-                        <span>INITIALIZING ENGINE......</span>
-                        <span>STEP</span>
-                    </div>
-
-                    <div className={`h-px mb-10 ${isDark ? "bg-white/10" : "bg-gray-300"}`} />
-
                     {/* QUESTION */}
                     <div className="text-center mb-12">
                         <h2 className="text-2xl font-semibold mb-2">
@@ -156,58 +406,88 @@ const GoalStepModal = ({ onClose, firstQuestion }) => {
                         )}
                     </div>
 
-                    {/* OPTIONS */}
-                    {isOptionType && optionList && (
-                        <div className="grid md:grid-cols-3 gap-10 mb-16">
-                            {optionList.map((opt, i) => (
-                                <div
-                                    key={i}
-                                    onClick={() => setSelected(opt)}
-                                    className={`rounded-2xl p-8 text-center cursor-pointer border transition
-                                        ${selected === opt
-                                            ? isDark
-                                                ? "border-white bg-white/10"
-                                                : "border-black shadow-md"
-                                            : isDark
-                                                ? "border-white/10 hover:bg-white/5"
+                    {/* ---------------- RADIO / SELECT ---------------- */}
+                    {SINGLE_OPTION_TYPES.includes(questionType) && (
+                        <div className="grid md:grid-cols-3 gap-8 mb-16">
+                            {optionList.map((opt, i) => {
+                                const value = opt.value || opt;
+                                const label = opt.label || opt;
+
+                                return (
+                                    <div
+                                        key={i}
+                                        onClick={() => setSelected(value)}
+                                        className={`p-6 rounded-2xl text-center cursor-pointer border transition
+                                            ${selected === value
+                                                ? "border-black shadow-md"
                                                 : "border-gray-300 hover:bg-gray-50"
-                                        }`}
-                                >
-                                    <h3 className="font-medium">
-                                        {typeof opt === "object" ? opt.label : opt}
-                                    </h3>
-                                </div>
-                            ))}
+                                            }`}
+                                    >
+                                        {label}
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
 
-                    {/* TEXT INPUT */}
-                    {question.type === "text" && (
+                    {/* ---------------- CHECKBOX ---------------- */}
+                    {questionType === "checkbox" && (
+                        <div className="grid md:grid-cols-2 gap-6 mb-16">
+                            {optionList.map((opt, i) => {
+                                const value = opt.value || opt;
+                                const label = opt.label || opt;
+                                const checked = multiSelected.includes(value);
+
+                                return (
+                                    <label
+                                        key={i}
+                                        className={`flex items-center gap-4 p-4 border rounded-xl cursor-pointer
+                                            ${checked ? "border-black bg-gray-100" : "border-gray-300"}
+                                        `}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={checked}
+                                            onChange={() => toggleCheckbox(value)}
+                                        />
+                                        {label}
+                                    </label>
+                                );
+                            })}
+                        </div>
+                    )}
+
+                    {/* ---------------- INPUT TYPES ---------------- */}
+                    {["text", "number", "date"].includes(questionType) && (
+                        <input
+                            type={questionType}
+                            value={textAnswer}
+                            onChange={(e) => setTextAnswer(e.target.value)}
+                            className="w-full border rounded-xl px-5 py-4 mb-16"
+                        />
+                    )}
+
+                    {/* ---------------- TEXTAREA ---------------- */}
+                    {questionType === "textarea" && (
                         <textarea
                             rows="6"
                             value={textAnswer}
                             onChange={(e) => setTextAnswer(e.target.value)}
-                            placeholder="Type your answer here..."
-                            className={`w-full rounded-xl border px-5 py-4 mb-16 resize-none bg-transparent outline-none
-                                ${isDark ? "border-white/10" : "border-gray-300"}`}
+                            className="w-full border rounded-xl px-5 py-4 mb-16 resize-none"
                         />
                     )}
 
-                    {/* YES / NO */}
-                    {question.type === "yesno" && (
+                    {/* ---------------- YES / NO ---------------- */}
+                    {questionType === "yesno" && (
                         <div className="flex justify-center gap-8 mb-16">
                             {["Yes", "No"].map((val) => (
                                 <button
                                     key={val}
                                     onClick={() => setSelected(val)}
-                                    className={`px-12 py-4 rounded-2xl text-lg font-medium border transition
+                                    className={`px-10 py-4 rounded-xl border
                                         ${selected === val
-                                            ? isDark
-                                                ? "bg-white text-black border-white"
-                                                : "bg-black text-white border-black"
-                                            : isDark
-                                                ? "border-white/10 hover:bg-white/5"
-                                                : "border-gray-300 hover:bg-gray-50"
+                                            ? "bg-black text-white"
+                                            : "border-gray-300"
                                         }`}
                                 >
                                     {val}
@@ -216,42 +496,23 @@ const GoalStepModal = ({ onClose, firstQuestion }) => {
                         </div>
                     )}
 
-                    {(question.type === "color-matrix" || question.type === "modules-selection") && (
+                    {/* ---------------- SPECIAL ---------------- */}
+                    {["color-matrix", "modules-selection"].includes(questionType) && (
                         <ColorSelection
-                            stepType={question.type}
+                            stepType={questionType}
                             options={question.options}
-                            isDark={isDark}
                             selected={selected}
                             setSelected={setSelected}
-                            // Custom Color Props
-                            isCustomMode={isCustomMode}
-                            customPalette={customPalette}
-                            activeColorIndex={activeColorIndex}
-                            currentColor={currentColor}
-                            setActiveColorIndex={setActiveColorIndex}
-                            setCurrentColor={setCurrentColor}
-                            handleColorChange={handleColorChange}
-                            handleSaveCustom={handleSaveCustom}
+                            isDark={isDark}
                         />
                     )}
-
 
                     {/* FOOTER */}
                     <div className="flex justify-end">
                         <button
-                            disabled={
-                                loading ||
-                                (question.type === "text" && !textAnswer) ||
-                                (question.type !== "text" && !selected)
-                            }
+                            disabled={loading}
                             onClick={handleContinue}
-                            className={`px-10 py-2.5 rounded-full border transition
-                                ${selected || textAnswer
-                                    ? isDark
-                                        ? "border-white hover:bg-white hover:text-black"
-                                        : "border-black hover:bg-black hover:text-white"
-                                    : "opacity-40 cursor-not-allowed border-gray-400"
-                                }`}
+                            className="px-10 py-3 rounded-full border hover:bg-black hover:text-white transition"
                         >
                             {loading ? "Loading..." : "Continue"}
                         </button>

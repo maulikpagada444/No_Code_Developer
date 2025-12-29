@@ -3,8 +3,9 @@ import Header from "./Header";
 import { FiPlus, FiEdit2, FiFolder, FiMic } from "react-icons/fi";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import NewProjectModal from "../Recommendation/NewProjectModal.jsx";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import AppAlert from "../common/AppAlert.jsx";
 
 /* Reusable Glass Card */
 const GlassCard = ({ theme, className = "", children, ...props }) => (
@@ -33,6 +34,13 @@ const Dashboard = () => {
     const [editProject, setEditProject] = useState(null);
     const [newProjectName, setNewProjectName] = useState("");
     const [updating, setUpdating] = useState(false);
+    const location = useLocation();
+
+    const [alert, setAlert] = useState({
+        open: false,
+        message: "",
+        severity: "success",
+    });
 
     /* 🔐 Extract projects safely from ANY backend response */
     const extractProjects = (data) => {
@@ -44,6 +52,20 @@ const Dashboard = () => {
         if (Array.isArray(data?.projects?.results)) return data.projects.results;
         return [];
     };
+
+    useEffect(() => {
+        if (location.state?.alert) {
+            setAlert({
+                open: true,
+                message: location.state.alert.message,
+                severity: location.state.alert.severity,
+            });
+
+            // 🔥 Clear state so refresh pe alert na aaye
+            navigate(location.pathname, { replace: true });
+        }
+    }, [location, navigate]);
+
 
     /* 📡 Fetch Recent Projects on page load */
     useEffect(() => {
@@ -374,6 +396,15 @@ const Dashboard = () => {
                     </div>
                 </div>
             )}
+
+            <AppAlert
+                open={alert.open}
+                message={alert.message}
+                severity={alert.severity}
+                onClose={() => setAlert(prev => ({ ...prev, open: false }))}
+            />
+
+
 
         </>
     );

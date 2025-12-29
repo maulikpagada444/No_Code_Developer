@@ -12,6 +12,7 @@ import PreviewPanel from './Components/Preview/PreviewPanel';
 import DomainDashboard from './Components/Domain/Dashboard';
 import ConnectDomain from './Components/Domain/ConnectDomain';
 import CustomDomain from './Components/Domain/CustomDomain';
+import ColorSelection from './Components/Recommendation/ColorSelection';
 
 function App() {
   return (
@@ -30,6 +31,8 @@ function App() {
         <Route path="/sub-domain/dashboard" element={<DomainDashboard />} />
         <Route path="/domain/connect" element={<ConnectDomain />} />
         <Route path="/domain/custom" element={<CustomDomain />} />
+        <Route path="/color-selection" element={<ColorSelection />} />
+
       </Routes>
     </ThemeProvider>
   );
