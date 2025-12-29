@@ -18,15 +18,16 @@ import bgLight from "../../../Public/bg.png";
 import bgDark from "../../../Public/bg_black.png";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import AppAlert from "../common/AppAlert.jsx";
-import { GoogleLogin } from "@react-oauth/google";
-import { jwtDecode } from "jwt-decode";
+import { useGoogleLogin } from "@react-oauth/google";
 
-const SignInScreen = ({ setStep, setEmail }) => {
+const SignInScreen = ({ setStep }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { theme } = useContext(ThemeContext);
+    const [googleLoading, setGoogleLoading] = useState(false);
 
     const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -117,57 +118,69 @@ const SignInScreen = ({ setStep, setEmail }) => {
 
 
     /* ---------------- GOOGLE SIGNUP ---------------- */
-    const handleGoogleSignup = async (credentialResponse) => {
+    const handleGoogleSignup = async (googleResponse) => {
         try {
-            const decoded = jwtDecode(credentialResponse.credential);
+            setGoogleLoading(true);
 
-            const response = await fetch(
-                `${import.meta.env.VITE_API_BASE_URL}/auth/google`,
+            // Fetch user profile from Google
+            const userInfoRes = await fetch(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
                 {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        username: decoded.name,
-                        email: decoded.email,
-                        login_method: "google",
-                        social_id: decoded.sub,
-                        picture: decoded.picture,
-                        device_id: "device-123",
-                        device_name: "Web Browser",
-                        location: "Surat",
-                    }),
+                    headers: {
+                        Authorization: `Bearer ${googleResponse.access_token}`,
+                    },
                 }
             );
+
+            const userInfo = await userInfoRes.json();
+
+            const response = await fetch(`${BASE_URL}/auth/google`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    username: userInfo.name,
+                    email: userInfo.email,
+                    login_method: "google",
+                    social_id: userInfo.sub,
+                    picture: userInfo.picture,
+                    device_id: "device-123",
+                    device_name: "Web Browser",
+                    location: "India",
+                }),
+            });
 
             const data = await response.json();
 
             if (!response.ok || data.status === false) {
-                showAlert(data?.message || "Google signup failed", "error");
-                return;
+                throw new Error(data?.message || "Google login failed");
             }
-
-            const username =
-                data?.data?.username ||
-                data?.data?.user?.username ||
-                decoded.name; // 🔥 fallback
 
             Cookies.set("access_token", data.data.access_token);
             Cookies.set("refresh_token", data.data.refresh_token);
-            Cookies.set("username", username); // ✅ FIXED
+            Cookies.set("username", data.data.username || userInfo.name);
 
             navigate("/dashboard", {
                 state: {
                     alert: {
-                        message: `${username} successfully logged in`,
+                        message: `${data.data.username || userInfo.name} successfully logged in`,
                         severity: "success",
                     },
                 },
             });
 
         } catch (err) {
-            showAlert(err.message || "Google signup failed", "error");
+            showAlert(err.message, "error");
+        } finally {
+            setGoogleLoading(false);
         }
     };
+
+
+    const RegisterUser = useGoogleLogin({
+        onSuccess: handleGoogleSignup,
+        onError: () => showAlert("Google login failed", "error"),
+    });
+
 
     return (
         <>
@@ -273,14 +286,38 @@ const SignInScreen = ({ setStep, setEmail }) => {
                                 <span className="flex-1 h-px bg-gray-300/50" />
                             </div>
 
-                            <div className="flex justify-center">
+                            {/* <div className="flex justify-center">
                                 <GoogleLogin
                                     onSuccess={handleGoogleSignup}
                                     onError={() =>
                                         showAlert("Google login failed", "error", "Google Error")
                                     }
                                 />
-                            </div>
+                            </div> */}
+
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    RegisterUser();
+                                }}
+                                disabled={googleLoading}
+                                className={`${googleLoading
+                                    ? "bg-gray-300 cursor-not-allowed"
+                                    : "bg-white hover:bg-gray-200"
+                                    } w-2/2 p-3 flex items-center justify-center gap-3 rounded-full`}
+                            >
+                                {googleLoading ? (
+                                    <span className="text-black text-sm font-semibold">Loading...</span>
+                                ) : (
+                                    <>
+                                        <FaGoogle className="text-red-500 text-lg" />
+                                        <span className="text-black text-sm font-semibold">
+                                            Continue with Google
+                                        </span>
+                                    </>
+                                )}
+                            </button>
+
 
                             <p className={`text-center text-sm
                                 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
