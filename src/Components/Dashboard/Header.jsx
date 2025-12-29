@@ -13,6 +13,7 @@ const Header = () => {
     const [open, setOpen] = useState(false);
     const dropdownRef = useRef(null);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [logoutLoading, setLogoutLoading] = useState(false);
 
     const [alert, setAlert] = useState({
         open: false,
@@ -21,16 +22,9 @@ const Header = () => {
         title: "",
     });
 
-
     const showAlert = (message, severity = "success", title = "") => {
-        setAlert({
-            open: true,
-            message,
-            severity,
-            title,
-        });
+        setAlert({ open: true, message, severity, title });
     };
-
 
     /* Close dropdown on outside click */
     useEffect(() => {
@@ -43,9 +37,11 @@ const Header = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    /* Logout */
+    /* 🔴 LOGOUT HANDLER WITH LOADER */
     const handleLogout = async () => {
         try {
+            setLogoutLoading(true);
+
             const BASE_URL = import.meta.env.VITE_API_BASE_URL;
             const accessToken = Cookies.get("access_token");
             const refreshToken = Cookies.get("refresh_token");
@@ -65,7 +61,6 @@ const Header = () => {
                 "warning",
                 "Session Expired"
             );
-
         } finally {
             Cookies.remove("access_token");
             Cookies.remove("refresh_token");
@@ -74,7 +69,6 @@ const Header = () => {
             Cookies.remove("user_id");
             Cookies.remove("project_id");
 
-            // 🔥 Navigate with alert state
             navigate("/signin", {
                 state: {
                     alert: {
@@ -83,6 +77,8 @@ const Header = () => {
                     },
                 },
             });
+
+            setLogoutLoading(false);
         }
     };
 
@@ -92,6 +88,7 @@ const Header = () => {
 
     return (
         <>
+            {/* HEADER */}
             <header
                 className={`w-full sticky top-0 z-50 backdrop-blur-xl border-b
                 ${theme === "dark"
@@ -129,6 +126,7 @@ const Header = () => {
                         ))}
                     </nav>
 
+                    {/* USER MENU */}
                     <div className="relative" ref={dropdownRef}>
                         <button
                             onClick={() => setOpen(!open)}
@@ -142,11 +140,12 @@ const Header = () => {
                         </button>
 
                         {open && (
-                            <div className={`absolute right-0 mt-2 w-56 rounded-xl shadow-lg border
-                            ${theme === "dark"
-                                    ? "bg-[#111] border-white/10"
-                                    : "bg-white border-gray-200"
-                                }`}
+                            <div
+                                className={`absolute right-0 mt-2 w-56 rounded-xl shadow-lg border
+                                ${theme === "dark"
+                                        ? "bg-[#111] border-white/10"
+                                        : "bg-white border-gray-200"
+                                    }`}
                             >
                                 <button
                                     onClick={() => {
@@ -192,35 +191,50 @@ const Header = () => {
                 </div>
             </header>
 
+            {/* LOGOUT CONFIRM MODAL */}
             {showLogoutConfirm && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
-                    <div className={`w-[90%] max-w-sm rounded-2xl p-6
-                    ${theme === "dark"
-                            ? "bg-[#111] text-white"
-                            : "bg-white text-black"
-                        }`}>
-                        <h3 className="text-lg font-semibold mb-2">Confirm Logout</h3>
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div
+                        className={`w-[90%] max-w-sm rounded-2xl p-6
+                        ${theme === "dark"
+                                ? "bg-[#111] text-white border border-white/10"
+                                : "bg-white text-black border border-gray-200"
+                            }`}
+                    >
+                        <h3 className="text-lg font-semibold mb-2">
+                            Confirm Logout
+                        </h3>
                         <p className="text-sm text-gray-500 mb-6">
                             Are you sure you want to logout?
                         </p>
+
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowLogoutConfirm(false)}
-                                className="px-4 py-2 rounded-lg border"
+                                disabled={logoutLoading}
+                                className="px-4 py-2 rounded-lg border disabled:opacity-50"
                             >
                                 Cancel
                             </button>
+
                             <button
                                 onClick={handleLogout}
-                                className="px-4 py-2 rounded-lg bg-red-600 text-white"
+                                disabled={logoutLoading}
+                                className={`px-4 py-2 rounded-lg bg-red-600 text-white
+                                flex items-center gap-2
+                                ${logoutLoading ? "opacity-60 cursor-not-allowed" : ""}`}
                             >
-                                Yes, Logout
+                                {logoutLoading && (
+                                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                )}
+                                {logoutLoading ? "Logging out..." : "Yes, Logout"}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
+            {/* 🔔 ALERT */}
             <AppAlert
                 open={alert.open}
                 message={alert.message}
@@ -230,7 +244,6 @@ const Header = () => {
                     setAlert(prev => ({ ...prev, open: false }))
                 }
             />
-
         </>
     );
 };

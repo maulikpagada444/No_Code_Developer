@@ -27,22 +27,28 @@ const GlassCard = ({ theme, className = "", children, ...props }) => (
 const Dashboard = () => {
     const { theme } = useContext(ThemeContext);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [openNewProject, setOpenNewProject] = useState(false);
     const [recentProjects, setRecentProjects] = useState([]);
     const [loadingProjects, setLoadingProjects] = useState(true);
+
     const [editProject, setEditProject] = useState(null);
     const [newProjectName, setNewProjectName] = useState("");
     const [updating, setUpdating] = useState(false);
-    const location = useLocation();
 
+    /* 🔔 ALERT */
     const [alert, setAlert] = useState({
         open: false,
         message: "",
         severity: "success",
     });
 
-    /* 🔐 Extract projects safely from ANY backend response */
+    const showAlert = (message, severity = "success") => {
+        setAlert({ open: true, message, severity });
+    };
+
+    /* 🔐 Extract projects safely */
     const extractProjects = (data) => {
         if (Array.isArray(data)) return data;
         if (Array.isArray(data?.projects)) return data.projects;
@@ -53,6 +59,7 @@ const Dashboard = () => {
         return [];
     };
 
+    /* 🔔 Alert from navigation */
     useEffect(() => {
         if (location.state?.alert) {
             setAlert({
@@ -60,14 +67,11 @@ const Dashboard = () => {
                 message: location.state.alert.message,
                 severity: location.state.alert.severity,
             });
-
-            // 🔥 Clear state so refresh pe alert na aaye
             navigate(location.pathname, { replace: true });
         }
     }, [location, navigate]);
 
-
-    /* 📡 Fetch Recent Projects on page load */
+    /* 📡 Fetch projects */
     useEffect(() => {
         const fetchRecentProjects = async () => {
             try {
@@ -76,20 +80,14 @@ const Dashboard = () => {
                 const res = await fetch(
                     `${import.meta.env.VITE_API_BASE_URL}/auth/project/list`,
                     {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
+                        headers: { Authorization: `Bearer ${token}` },
                     }
                 );
 
                 const data = await res.json();
-                console.log("📁 Project API response:", data);
-
                 const projects = extractProjects(data);
                 setRecentProjects(projects.slice(0, 4));
-
             } catch (err) {
-                console.error("❌ Project list error:", err);
                 setRecentProjects([]);
             } finally {
                 setLoadingProjects(false);
@@ -99,8 +97,12 @@ const Dashboard = () => {
         fetchRecentProjects();
     }, []);
 
+    /* ✏️ UPDATE PROJECT NAME */
     const handleUpdateProjectName = async () => {
-        if (!newProjectName.trim()) return;
+        if (!newProjectName.trim()) {
+            showAlert("Project name cannot be empty", "warning");
+            return;
+        }
 
         try {
             setUpdating(true);
@@ -116,34 +118,36 @@ const Dashboard = () => {
                     },
                     body: JSON.stringify({
                         project_id: editProject.project_id,
-                        new_project_name: newProjectName,
+                        new_project_name: newProjectName.trim(),
                     }),
                 }
             );
 
             const data = await res.json();
 
-            if (data?.status === true) {
-                setRecentProjects((prev) =>
-                    prev.map((p) =>
-                        p.project_id === editProject.project_id
-                            ? { ...p, project_name: newProjectName }
-                            : p
-                    )
-                );
-                setEditProject(null);
-            } else {
-                alert(data?.message || "Update failed");
+            if (!res.ok || data?.status !== true) {
+                showAlert(data?.message || "Update failed", "error");
+                return;
             }
+
+            // ✅ Update UI
+            setRecentProjects((prev) =>
+                prev.map((p) =>
+                    p.project_id === editProject.project_id
+                        ? { ...p, project_name: newProjectName }
+                        : p
+                )
+            );
+
+            showAlert("Project renamed successfully", "success");
+            setEditProject(null);
+
         } catch (err) {
-            console.error(err);
-            alert("Something went wrong");
+            showAlert("Something went wrong", "error");
         } finally {
             setUpdating(false);
         }
     };
-
-
 
     return (
         <>
@@ -156,22 +160,15 @@ const Dashboard = () => {
                     }
             `}
             >
-                {/* GRID BACKGROUND (dark only) */}
                 {theme === "dark" && (
-                    <div
-                        className="
-                        absolute inset-0 z-0 pointer-events-none
+                    <div className="absolute inset-0 z-0 pointer-events-none
                         bg-[linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),
                         linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)]
-                        bg-[size:40px_40px]
-                    "
-                    />
+                        bg-[size:40px_40px]" />
                 )}
 
-                {/* HEADER */}
                 <Header />
 
-                {/* MAIN */}
                 <main className="relative z-10 max-w-7xl mx-auto px-6 py-12">
                     <h1 className="text-4xl font-semibold mb-12">
                         Welcome Back, Demo
@@ -179,37 +176,23 @@ const Dashboard = () => {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
-                        {/* LEFT CARD */}
+                        {/* NEW PROJECT */}
                         <GlassCard
                             theme={theme}
                             className="p-6 h-[260px] cursor-pointer hover:bg-white/10 transition"
                             onClick={() => setOpenNewProject(true)}
                         >
-                            <div
-                                className={`
-                                w-11 h-11 rounded-lg flex items-center justify-center mb-4
-                                ${theme === "dark" ? "bg-white/10" : "bg-gray-100"}
-                            `}
-                            >
+                            <div className={`w-11 h-11 rounded-lg flex items-center justify-center mb-4
+                                ${theme === "dark" ? "bg-white/10" : "bg-gray-100"}`}>
                                 <FiPlus size={20} />
                             </div>
-
-                            <h2 className="text-lg font-semibold mb-2">
-                                New Project
-                            </h2>
-
-                            <p
-                                className={`text-sm leading-relaxed ${theme === "dark"
-                                    ? "text-gray-400"
-                                    : "text-gray-500"
-                                    }`}
-                            >
-                                Lorem ipsum dolor sit amet consectetur. Fringilla pretium malesuada
-                                consequat morbi ac pretium sed et nec.
+                            <h2 className="text-lg font-semibold mb-2">New Project</h2>
+                            <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                                Lorem ipsum dolor sit amet consectetur.
                             </p>
                         </GlassCard>
 
-                        {/* RIGHT CARD */}
+                        {/* RECENT PROJECT */}
                         <GlassCard theme={theme} className="p-8">
                             <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-3">
@@ -311,7 +294,6 @@ const Dashboard = () => {
                                 )}
                             </div>
                         </GlassCard>
-
                     </div>
                 </main>
 
@@ -320,42 +302,28 @@ const Dashboard = () => {
                 )}
 
                 {/* MIC */}
-                <div className="
-                fixed bottom-10 left-10 z-20
-                flex items-center gap-3
-            ">
-                    <div
-                        className={`
-                        w-12 h-12 rounded-full border backdrop-blur flex items-center justify-center
+                <div className="fixed bottom-10 left-10 z-20 flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-full border backdrop-blur flex items-center justify-center
                         ${theme === "dark"
-                                ? "bg-white/10 border-white/20 text-gray-300"
-                                : "bg-white border-gray-300 text-gray-600"
-                            }
-                    `}
-                    >
+                            ? "bg-white/10 border-white/20 text-gray-300"
+                            : "bg-white border-gray-300 text-gray-600"
+                        }`}>
                         <FiMic />
                     </div>
-                    <span
-                        className={`text-sm ${theme === "dark"
-                            ? "text-gray-400"
-                            : "text-gray-500"
-                            }`}
-                    >
+                    <span className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
                         Type, Jarvis Speaks
                     </span>
                 </div>
             </div>
+
+            {/* ✏️ EDIT MODAL */}
             {editProject && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div
-                        className={`
-                w-[90%] max-w-sm rounded-2xl p-6 shadow-2xl
-                ${theme === "dark"
-                                ? "bg-[#111] text-white border border-white/10"
-                                : "bg-white text-black border border-gray-200"
-                            }
-            `}
-                    >
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
+                    <div className={`w-[90%] max-w-sm rounded-2xl p-6
+                        ${theme === "dark"
+                            ? "bg-[#111] text-white"
+                            : "bg-white text-black"
+                        }`}>
                         <h3 className="text-lg font-semibold mb-2">
                             Rename Project
                         </h3>
@@ -367,20 +335,13 @@ const Dashboard = () => {
                         <input
                             value={newProjectName}
                             onChange={(e) => setNewProjectName(e.target.value)}
-                            className={`
-                    w-full px-4 py-2 rounded-lg mb-6 outline-none border
-                    ${theme === "dark"
-                                    ? "bg-black border-white/10 text-white"
-                                    : "bg-white border-gray-300"
-                                }
-                `}
-                            placeholder="Project name"
+                            className="w-full px-4 py-2 rounded-lg mb-6 border"
                         />
 
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setEditProject(null)}
-                                className="px-4 py-2 rounded-lg text-sm border hover:bg-gray-100"
+                                className="px-4 py-2 rounded-lg text-sm border"
                             >
                                 Cancel
                             </button>
@@ -388,7 +349,7 @@ const Dashboard = () => {
                             <button
                                 onClick={handleUpdateProjectName}
                                 disabled={updating}
-                                className="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                                className="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white disabled:opacity-50"
                             >
                                 {updating ? "Updating..." : "Update"}
                             </button>
@@ -397,15 +358,13 @@ const Dashboard = () => {
                 </div>
             )}
 
+            {/* 🔔 ALERT */}
             <AppAlert
                 open={alert.open}
                 message={alert.message}
                 severity={alert.severity}
                 onClose={() => setAlert(prev => ({ ...prev, open: false }))}
             />
-
-
-
         </>
     );
 };

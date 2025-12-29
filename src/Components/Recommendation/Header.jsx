@@ -3,16 +3,32 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { FiUser, FiLogOut, FiGrid } from "react-icons/fi";
 import Cookies from "js-cookie";
 import { ThemeContext } from "../../ThemeProvider.jsx";
+import AppAlert from "../common/AppAlert.jsx";
 
 const Header = () => {
     const { theme } = useContext(ThemeContext);
     const navigate = useNavigate();
 
     const username = Cookies.get("username") || "User";
-    const [open, setOpen] = useState(false);
-    const dropdownRef = useRef(null);
-    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
+    const [open, setOpen] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [loggingOut, setLoggingOut] = useState(false);
+
+    const [alert, setAlert] = useState({
+        open: false,
+        message: "",
+        severity: "success",
+        title: "",
+    });
+
+    const dropdownRef = useRef(null);
+
+    const showAlert = (message, severity = "success", title = "") => {
+        setAlert({ open: true, message, severity, title });
+    };
+
+    /* Close dropdown on outside click */
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -23,10 +39,12 @@ const Header = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    /* Logout */
     const handleLogout = async () => {
         try {
-            const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+            setLoggingOut(true);
 
+            const BASE_URL = import.meta.env.VITE_API_BASE_URL;
             const accessToken = Cookies.get("access_token");
             const refreshToken = Cookies.get("refresh_token");
 
@@ -34,13 +52,20 @@ const Header = () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${refreshToken}`, 
-                    "X-Access-Token": accessToken,          
+                    Authorization: `Bearer ${refreshToken}`,
+                    "X-Access-Token": accessToken,
                 },
             });
 
+            showAlert("Logged out successfully", "success");
+
         } catch (error) {
             console.error("Logout API error:", error);
+            showAlert(
+                "You were logged out locally",
+                "warning",
+                "Session Ended"
+            );
         } finally {
             Cookies.remove("access_token");
             Cookies.remove("refresh_token");
@@ -49,10 +74,14 @@ const Header = () => {
             Cookies.remove("user_id");
             Cookies.remove("project_id");
 
-            navigate("/signin");
+            setLoggingOut(false);
+            setShowLogoutConfirm(false);
+
+            setTimeout(() => {
+                navigate("/signin");
+            }, 700);
         }
     };
-
 
     return (
         <>
@@ -121,10 +150,10 @@ const Header = () => {
                             </div>
                         )}
                     </div>
-
                 </div>
             </header>
 
+            {/* Logout Confirmation Modal */}
             {showLogoutConfirm && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
                     <div
@@ -147,6 +176,7 @@ const Header = () => {
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowLogoutConfirm(false)}
+                                disabled={loggingOut}
                                 className="px-4 py-2 rounded-lg text-sm border hover:bg-gray-100"
                             >
                                 Cancel
@@ -154,18 +184,33 @@ const Header = () => {
 
                             <button
                                 onClick={handleLogout}
-                                className="px-4 py-2 rounded-lg text-sm bg-red-600 text-white hover:bg-red-700"
+                                disabled={loggingOut}
+                                className={`px-4 py-2 rounded-lg text-sm bg-red-600 text-white flex items-center gap-2
+                                ${loggingOut ? "opacity-60 cursor-not-allowed" : "hover:bg-red-700"}
+                            `}
                             >
-                                Yes, Logout
+                                {loggingOut && (
+                                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                )}
+                                {loggingOut ? "Logging out..." : "Yes, Logout"}
                             </button>
-
                         </div>
                     </div>
                 </div>
             )}
+
+            {/* 🔔 ALERT */}
+            <AppAlert
+                open={alert.open}
+                message={alert.message}
+                severity={alert.severity}
+                title={alert.title}
+                onClose={() =>
+                    setAlert(prev => ({ ...prev, open: false }))
+                }
+            />
         </>
     );
-
 };
 
 export default Header;
