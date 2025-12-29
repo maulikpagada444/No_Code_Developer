@@ -87,8 +87,7 @@ function PreviewContent() {
         const handleMessage = (event) => {
             if (event.data?.type === 'ELEMENT_CLICKED') {
                 setSelectedElement(event.data.payload);
-                // Switch to edit mode automatically if an element is clicked? 
-                // Or just show properties? For now, let's keep it simple.
+                // Automatically switch to edit mode if not already
                 if (mode !== 'edit') setMode('edit');
             }
         };
@@ -112,7 +111,7 @@ function PreviewContent() {
             body { 
                 margin: 0; 
                 overflow-x: hidden; 
-                background: #050510; /* Default background from context/placeholder */
+                background: #050510; 
                 font-family: sans-serif;
             }
             ::-webkit-scrollbar { display: none; }
@@ -145,9 +144,7 @@ function PreviewContent() {
             <Header mode={mode} onModeChange={setMode} />
 
             {/* ================= MAIN PREVIEW ================= */}
-            {/* Added 'flex overflow-hidden' to wrapper to support sidebar layout */}
             <div className="flex-1 flex overflow-hidden relative z-10">
-
                 <main className="flex-1 relative w-full h-full flex items-center justify-center p-8 overflow-hidden">
                     <div
                         className={`shadow-2xl relative overflow-hidden transition-all duration-500 ease-in-out border
@@ -178,10 +175,9 @@ function PreviewContent() {
                 </main>
 
                 {/* Right Panel - Only show if selectedElement is present */}
-                {selectedElement && (
+                {selectedElement && mode === "edit" && (
                     <PropertiesPanel />
                 )}
-
             </div>
 
             {/* 🔥 SHOW ONLY IN EDIT MODE */}
@@ -201,7 +197,6 @@ function PreviewContent() {
                 </>
             )}
 
-
             {showPublishModal && (
                 <PublishModal
                     onConnectDomain={() => {
@@ -219,7 +214,6 @@ function PreviewContent() {
                         navigate("/sub-domain/dashboard");
                     }}
                 />
-
             )}
 
             {showSubDomainModal && (
