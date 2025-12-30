@@ -16,20 +16,20 @@ import {
 } from "react-icons/fi";
 
 export const MODULES_OPTIONS = [
-    { label: "Home", icon: <FiHome /> },
-    { label: "About Us", icon: <FiUser /> },
-    { label: "Services", icon: <FiLayers /> },
-    { label: "E-Commerce", icon: <FiShoppingCart /> },
-    { label: "Contact", icon: <FiMail /> },
-    { label: "AI Blog", icon: <FiCpu /> },
-    { label: "Portfolio", icon: <FiImage /> },
-    { label: "Testimonials", icon: <FiMessageCircle /> },
-    { label: "FAQ", icon: <FiHelpCircle /> },
-    { label: "Pricing Tables", icon: <FiDollarSign /> },
-    { label: "Products", icon: <FiPackage /> },
-    { label: "Gallery", icon: <FiImage /> },
-    { label: "Video Intro", icon: <FiVideo /> },
-    { label: "Booking Sys", icon: <FiCalendar /> },
+    { label: "Home", value: "home", icon: <FiHome /> },
+    { label: "About Us", value: "about_us", icon: <FiUser /> },
+    { label: "Services", value: "services", icon: <FiLayers /> },
+    { label: "E-Commerce", value: "e_commerce", icon: <FiShoppingCart /> },
+    { label: "Contact", value: "contact", icon: <FiMail /> },
+    { label: "AI Blog", value: "ai_blog", icon: <FiCpu /> },
+    { label: "Portfolio", value: "portfolio", icon: <FiImage /> },
+    { label: "Testimonials", value: "testimonials", icon: <FiMessageCircle /> },
+    { label: "FAQ", value: "faq", icon: <FiHelpCircle /> },
+    { label: "Pricing Tables", value: "pricing_tables", icon: <FiDollarSign /> },
+    { label: "Products", value: "products", icon: <FiPackage /> },
+    { label: "Gallery", value: "gallery", icon: <FiImage /> },
+    { label: "Video Intro", value: "video_intro", icon: <FiVideo /> },
+    { label: "Booking Sys", value: "booking_sys", icon: <FiCalendar /> },
 ];
 
 const FeaturesSelection = ({
@@ -68,16 +68,18 @@ const FeaturesSelection = ({
         `}
             >
                 {options.map((option, i) => {
-                    const isSelected = selected.includes(option.label);
+                    const optionValue = option?.value || option?.label;
+                    if (!optionValue) return null;
+                    const isSelected = selected.includes(optionValue);
 
                     return (
                         <button
                             key={i}
                             onClick={() => {
                                 if (isSelected) {
-                                    setSelected(selected.filter(item => item !== option.label));
+                                    setSelected(selected.filter(item => item !== optionValue));
                                 } else if (selected.length < 4) {
-                                    setSelected([...selected, option.label]);
+                                    setSelected([...selected, optionValue]);
                                 }
                             }}
                             className={`
