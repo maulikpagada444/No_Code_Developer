@@ -103,7 +103,17 @@ const ProjectWorkspace = () => {
             return;
         }
 
-        const paletteId = `p${selectedPalette + 1}`;
+        const payload =
+            selectedPalette === "custom"
+                ? {
+                    session_id: Cookies.get("session_id"),
+                    palette_type: "custom",
+                    colors: customColors,
+                }
+                : {
+                    session_id: Cookies.get("session_id"),
+                    palette_id: `p${selectedPalette + 1}`,
+                };
 
         try {
             const res = await fetch(
@@ -114,26 +124,21 @@ const ProjectWorkspace = () => {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${Cookies.get("access_token")}`,
                     },
-                    body: JSON.stringify({
-                        session_id: Cookies.get("session_id"),
-                        palette_id: paletteId,
-                    }),
+                    body: JSON.stringify(payload),
                 }
             );
 
             const data = await res.json();
-
             if (!res.ok || data.status === false) {
                 throw new Error(data?.message || "Palette selection failed");
             }
 
-            // ✅ SUCCESS → Next step
             setStep(STEPS.FEATURES);
-
         } catch (err) {
             showAlert(err.message, "error", "Palette Error");
         }
     };
+
     const normalizeFeatureOption = (item, index) => {
         if (!item) return null;
 
@@ -276,7 +281,7 @@ const ProjectWorkspace = () => {
                 throw new Error(metaData?.message || "Failed to save project metadata");
             }
 
-            navigate("/dashboard/preview");
+            navigate("/project/preview");
         } catch (err) {
             console.error(err);
             showAlert(err.message || "Failed to finish setup", "error", "Finish Failed");
