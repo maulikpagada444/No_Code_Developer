@@ -1,65 +1,64 @@
 'use client';
+import { useContext, useEffect, useRef } from "react";
+import { ThemeContext } from "../../ThemeProvider";
 import {
-    Paperclip,
-    MousePointer2,
-    MessageSquare,
     Smartphone,
     Tablet,
     Monitor,
-    Rocket,
     Undo2,
     Redo2,
-    Type
+    MousePointer2,
+    Rocket
 } from 'lucide-react';
-import { useContext } from "react";
-import { ThemeContext } from "../../ThemeProvider";
+import { FiZap } from "react-icons/fi";
+import { gsap } from "gsap";
 
 export function BottomToolbar({
     viewMode = 'desktop',
     onViewChange,
     onPublishClick,
+    isInteractMode = false,
+    onInteractToggle,
 }) {
     const { theme } = useContext(ThemeContext);
+    const toolbarRef = useRef(null);
 
-    // 🔁 INVERTED THEME
-    const isDarkUI = theme !== "dark"; // light theme → dark toolbar
+    useEffect(() => {
+        gsap.fromTo(toolbarRef.current,
+            { opacity: 0, y: 50, scale: 0.95 },
+            { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "back.out(1.7)", delay: 0.3 }
+        );
+    }, []);
 
     return (
         <div
-            className={`
-                fixed bottom-6 left-1/2 -translate-x-1/2 z-50
-                flex items-center gap-2 rounded-xl border p-2 backdrop-blur-xl shadow-2xl
-                ${isDarkUI
-                    ? "bg-[#0f0f0f] border-white/10 text-white"
-                    : "bg-white border-gray-200 text-black"
-                }
-            `}
+            ref={toolbarRef}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 p-2 rounded-2xl glass-card border border-white/10 shadow-2xl"
         >
-            {/* History */}
-            <div className="flex items-center gap-1 px-1">
-                <button className={`h-8 w-8 transition ${isDarkUI ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"}`}>
-                    <Undo2 className="h-4 w-4" />
-                </button>
-                <button className={`h-8 w-8 transition ${isDarkUI ? "text-gray-400 hover:text-white" : "text-gray-500 hover:text-black"}`}>
-                    <Redo2 className="h-4 w-4" />
-                </button>
+            {/* Undo/Redo */}
+            <div className="flex items-center gap-1 px-2">
+                <ToolbarButton icon={Undo2} tooltip="Undo" />
+                <ToolbarButton icon={Redo2} tooltip="Redo" />
             </div>
 
-            <Divider isDarkUI={isDarkUI} />
+            <Divider />
 
-            {/* Tools */}
-            <div className="flex items-center gap-1 px-1">
-                <ToolButton icon={Paperclip} label="Attach" isDarkUI={isDarkUI} />
-                <ToolButton icon={MousePointer2} label="Interact" isDarkUI={isDarkUI} />
+            {/* Interact Mode */}
+            <button
+                onClick={onInteractToggle}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${isInteractMode
+                        ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg shadow-purple-500/30'
+                        : 'text-gray-400 hover:text-white hover:bg-white/10'
+                    }`}
+            >
+                <MousePointer2 size={16} />
+                <span>{isInteractMode ? 'Interacting' : 'Interact'}</span>
+            </button>
 
-                <IconButton icon={Type} isDarkUI={isDarkUI} />
-                <IconButton icon={MessageSquare} isDarkUI={isDarkUI} />
-            </div>
+            <Divider />
 
-            <Divider isDarkUI={isDarkUI} />
-
-            {/* Devices */}
-            <div className="flex items-center gap-1 px-1">
+            {/* Device Buttons */}
+            <div className="flex items-center gap-1 px-2">
                 {[
                     { id: 'mobile', Icon: Smartphone },
                     { id: 'tablet', Icon: Tablet },
@@ -68,76 +67,40 @@ export function BottomToolbar({
                     <button
                         key={id}
                         onClick={() => onViewChange?.(id)}
-                        className={`
-                            h-8 w-8 flex items-center justify-center rounded-lg transition-all
-                            ${viewMode === id
-                                ? isDarkUI
-                                    ? "border-2 border-white text-white"
-                                    : "border-2 border-black text-black"
-                                : isDarkUI
-                                    ? "text-gray-400 hover:text-white"
-                                    : "text-gray-400 hover:text-black"
-                            }
-                        `}
+                        className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${viewMode === id
+                                ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg shadow-purple-500/20'
+                                : 'text-gray-400 hover:text-white hover:bg-white/10'
+                            }`}
                     >
-                        <Icon className="h-4 w-4" />
+                        <Icon size={16} />
                     </button>
                 ))}
             </div>
 
-            <Divider isDarkUI={isDarkUI} />
+            <Divider />
 
-            {/* Publish */}
-            <div className="pl-1">
-                <button
-                    onClick={onPublishClick}
-                    className={`
-                        h-8 px-4 rounded-lg text-xs font-bold flex items-center gap-2 border transition
-                        ${isDarkUI
-                            ? "bg-white text-black border-white hover:bg-gray-200"
-                            : "bg-gray-100 text-black border-gray-200 hover:bg-gray-200"
-                        }
-                    `}
-                >
-                    <Rocket className="h-3.5 w-3.5" />
-                    Publish
-                </button>
-            </div>
+            {/* Publish Button */}
+            <button
+                onClick={onPublishClick}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold text-sm hover:shadow-lg hover:shadow-green-500/30 transition-all active:scale-95"
+            >
+                <Rocket size={16} />
+                <span>Publish</span>
+            </button>
         </div>
     );
 }
 
-/* ================= Helpers ================= */
-
-const Divider = ({ isDarkUI }) => (
-    <div className={`w-px h-6 mx-1 ${isDarkUI ? "bg-white/10" : "bg-gray-200"}`} />
+const Divider = () => (
+    <div className="w-px h-8 bg-white/10" />
 );
 
-const ToolButton = ({ icon: Icon, label, isDarkUI }) => (
+const ToolbarButton = ({ icon: Icon, tooltip, onClick }) => (
     <button
-        className={`
-            h-8 flex items-center gap-2 px-3 rounded-lg text-xs font-medium transition
-            ${isDarkUI
-                ? "text-gray-300 hover:bg-white/10 hover:text-white"
-                : "text-gray-600 hover:bg-gray-100"
-            }
-        `}
+        onClick={onClick}
+        className="w-9 h-9 flex items-center justify-center rounded-xl text-gray-400 hover:text-white hover:bg-white/10 transition-all active:scale-95"
+        title={tooltip}
     >
-        <Icon className="h-4 w-4" />
-        {label}
-    </button>
-);
-
-const IconButton = ({ icon: Icon, isDarkUI }) => (
-    <button
-        className={`
-            h-8 w-8 flex items-center justify-center rounded-lg transition
-            ${isDarkUI
-                ? "text-gray-400 hover:text-white hover:bg-white/10"
-                : "text-gray-500 hover:text-black hover:bg-gray-100"
-            }
-        `}
-    >
-        <Icon className="h-4 w-4" />
+        <Icon size={16} />
     </button>
 );

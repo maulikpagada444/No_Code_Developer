@@ -1,8 +1,6 @@
 import React, { useState, useContext } from "react";
-import { FaRegEnvelope } from "react-icons/fa";
-
-import bgLight from "../../../Public/bg.png";
-import bgDark from "../../../Public/bg_black.png";
+import { HiKey } from "react-icons/hi";
+import { HiOutlineMail } from "react-icons/hi";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import AppAlert from "../common/AppAlert.jsx";
 
@@ -20,17 +18,11 @@ const ForgotPasswordScreen = ({ setStep, setEmail }) => {
     });
 
     const showAlert = (message, severity = "error", title = "") => {
-        setAlert({
-            open: true,
-            message,
-            severity,
-            title,
-        });
+        setAlert({ open: true, message, severity, title });
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (!emailLocal.trim()) {
             showAlert("Please enter a valid email address", "warning");
             return;
@@ -38,17 +30,12 @@ const ForgotPasswordScreen = ({ setStep, setEmail }) => {
 
         try {
             setLoading(true);
-
             const response = await fetch(
                 `${import.meta.env.VITE_API_BASE_URL}/auth/forgot-password/send-otp`,
                 {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        email: emailLocal.trim(),
-                    }),
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: emailLocal.trim() }),
                 }
             );
 
@@ -60,23 +47,14 @@ const ForgotPasswordScreen = ({ setStep, setEmail }) => {
             }
 
             setEmail(emailLocal.trim());
-
-            showAlert(
-                "OTP sent successfully to your email",
-                "success",
-                "Check Your Inbox"
-            );
+            showAlert("OTP sent successfully to your email", "success", "Check Your Inbox");
 
             setTimeout(() => {
                 setStep(3);
             }, 1200);
 
         } catch (err) {
-            showAlert(
-                "Server not reachable. Please try again later.",
-                "error",
-                "Network Error"
-            );
+            showAlert("Server not reachable. Please try again later.", "error", "Network Error");
         } finally {
             setLoading(false);
         }
@@ -84,125 +62,97 @@ const ForgotPasswordScreen = ({ setStep, setEmail }) => {
 
     return (
         <>
-            <div
-                className="min-h-screen flex items-center justify-center px-4"
-                style={{
-                    backgroundImage: `url(${theme === "dark" ? bgDark : bgLight})`,
-                    backgroundColor: theme === "dark" ? "#000000" : "#f6f6f6",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                }}
-            >
-                {/* Glow */}
-                <div
-                    className="absolute rounded-[100%] pointer-events-none z-0"
-                    style={{
-                        width: "990px",
-                        height: "562px",
-                        top: "-281px",
-                        left: "49%",
-                        transform: "translateX(-50%)",
-                        background: "rgba(255,255,255,0.15)",
-                        filter: "blur(120px)",
-                    }}
-                />
+            <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
+                {/* Animated Gradient Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20" />
 
-                <div className="w-full max-w-md">
-                    <div
-                        className={`rounded-[24px] px-10 py-12 border shadow-[0_30px_80px_rgba(0,0,0,0.08)]
-                        ${theme === "dark"
-                                ? "bg-black border-gray-700 text-white"
-                                : "bg-white border-gray-200 text-gray-900"
-                            }`}
-                    >
-                        <h2 className="text-2xl font-semibold text-center">
-                            Forgot Password?
-                        </h2>
+                {/* Animated Orbs */}
+                <div className="orb orb-blue animate-float" style={{ width: '420px', height: '420px', top: '12%', left: '8%', animationDuration: '11s' }} />
+                <div className="orb orb-purple animate-float" style={{ width: '380px', height: '380px', bottom: '8%', right: '12%', animationDelay: '3s', animationDuration: '13s' }} />
+                <div className="orb orb-cyan animate-float" style={{ width: '320px', height: '320px', top: '45%', right: '18%', animationDelay: '5s', animationDuration: '15s' }} />
 
-                        <p
-                            className={`text-sm text-center mt-2 mb-8
-                            ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}
-                        >
-                            Enter the email associated with your account
-                        </p>
+                {/* Content */}
+                <div className="relative z-10 w-full max-w-md animate-fade-up">
+                    {/* Glass Card */}
+                    <div className="glass-card rounded-3xl p-8 shadow-2xl">
+                        {/* Header */}
+                        <div className="text-center mb-8">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full mb-4">
+                                <HiKey className="text-4xl text-blue-500" />
+                            </div>
+                            <h1 className="text-3xl font-bold theme-text mb-2">
+                                Forgot Password?
+                            </h1>
+                            <p className="theme-text-muted">
+                                No worries, we'll send you reset instructions
+                            </p>
+                        </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            <Input
-                                icon={<FaRegEnvelope />}
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* Email Input */}
+                            <ModernInput
+                                icon={<HiOutlineMail />}
                                 type="email"
-                                placeholder="Enter Your Email"
+                                placeholder="Enter your email"
                                 value={emailLocal}
                                 onChange={(e) => setEmailLocal(e.target.value)}
                                 theme={theme}
                             />
 
+                            {/* Send Code Button */}
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className={`w-full py-3 rounded-full border font-medium transition flex items-center justify-center gap-2
-    ${theme === "dark"
-                                        ? "bg-black border-white text-white hover:bg-white hover:text-black"
-                                        : "bg-white border-gray-300 hover:shadow-md"
-                                    }
-    ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
+                                className="btn-primary w-full py-3.5 rounded-xl font-semibold text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
                             >
                                 {loading && (
-                                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                 )}
-                                {loading ? "Sending..." : "Send Code"}
+                                {loading ? "Sending..." : "Send Reset Code"}
                             </button>
 
-
-                            <p
-                                className={`text-center text-sm
-                                ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}
-                            >
-                                Remember your password?
+                            {/* Back to Sign In */}
+                            <p className="text-center theme-text-muted text-sm">
+                                Remember your password?{" "}
                                 <button
                                     type="button"
                                     onClick={() => setStep(1)}
-                                    className={`ml-1 font-semibold hover:underline
-                                    ${theme === "dark" ? "text-white" : "text-gray-900"}`}
+                                    className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:from-blue-700 hover:to-purple-700 transition-all"
                                 >
                                     Back to Sign In
                                 </button>
                             </p>
                         </form>
                     </div>
+
+                    {/* Bottom Decorative Text */}
+                    <p className="text-center mt-6 theme-text-muted text-xs">
+                        Check your email inbox and spam folder
+                    </p>
                 </div>
             </div>
 
-            {/* 🔔 ALERT */}
             <AppAlert
                 open={alert.open}
                 message={alert.message}
                 severity={alert.severity}
                 title={alert.title}
-                onClose={() =>
-                    setAlert(prev => ({ ...prev, open: false }))
-                }
+                onClose={() => setAlert(prev => ({ ...prev, open: false }))}
             />
         </>
     );
 };
 
-const Input = ({ icon, theme, ...props }) => (
-    <div
-        className={`flex items-center gap-3 px-4 py-3 rounded-2xl border
-        ${theme === "dark"
-                ? "border-gray-600 focus-within:border-white"
-                : "border-gray-300 focus-within:border-gray-500"
-            }`}
-    >
-        <span className="text-gray-400">{icon}</span>
+// Modern Input Component
+const ModernInput = ({ icon, theme, ...props }) => (
+    <div className="relative group">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none theme-text-muted group-focus-within:text-blue-500 transition-colors">
+            {icon}
+        </div>
         <input
             {...props}
             required
-            className={`w-full text-sm bg-transparent outline-none
-            ${theme === "dark"
-                    ? "text-white placeholder-gray-500"
-                    : "text-black placeholder-gray-400"
-                }`}
+            className="w-full pl-12 pr-4 py-3.5 bg-white/50 dark:bg-white/5 border-2 theme-border rounded-xl theme-text placeholder:theme-text-muted focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all duration-300"
         />
     </div>
 );

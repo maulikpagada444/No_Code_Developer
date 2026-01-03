@@ -1,10 +1,8 @@
 import React, { useEffect, useRef, useState, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { HiShieldCheck } from "react-icons/hi";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import AppAlert from "../common/AppAlert.jsx";
-
-import bgLight from "../../../Public/bg.png";
-import bgDark from "../../../Public/bg_black.png";
 import Cookies from "js-cookie";
 
 const OTP_LENGTH = 6;
@@ -39,14 +37,12 @@ const SignOtp = ({ email: propEmail }) => {
 
     useEffect(() => {
         const alertData = sessionStorage.getItem("signup_alert");
-
         if (alertData) {
             const parsed = JSON.parse(alertData);
             showAlert(parsed.message, parsed.severity);
             sessionStorage.removeItem("signup_alert");
         }
     }, []);
-
 
     useEffect(() => {
         if (timer <= 0) return;
@@ -66,10 +62,14 @@ const SignOtp = ({ email: propEmail }) => {
         }
     };
 
-    /* ---------------- VERIFY OTP ---------------- */
+    const handleKeyDown = (i, e) => {
+        if (e.key === "Backspace" && !otp[i] && i > 0) {
+            inputRefs.current[i - 1]?.focus();
+        }
+    };
+
     const handleVerifyOtp = async () => {
         const otpValue = otp.join("");
-
         if (otpValue.length !== OTP_LENGTH) {
             showAlert("Please enter the complete 6-digit OTP", "warning");
             return;
@@ -77,55 +77,29 @@ const SignOtp = ({ email: propEmail }) => {
 
         try {
             setLoading(true);
-
             const response = await fetch(
                 `${import.meta.env.VITE_API_BASE_URL}/auth/verify-otp`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        email,
-                        otp: otpValue,
-                    }),
+                    body: JSON.stringify({ email, otp: otpValue }),
                 }
             );
 
             const payload = await response.json();
 
             if (!response.ok || !payload.status) {
-                showAlert(
-                    payload?.message || "OTP verification failed",
-                    "error",
-                    "Verification Failed"
-                );
+                showAlert(payload?.message || "OTP verification failed", "error", "Verification Failed");
                 return;
             }
 
-            // ✅ SAVE COOKIES
-            Cookies.set("access_token", payload.data.access_token, {
-                expires: 1,
-                secure: true,
-                sameSite: "strict",
-            });
-
-            Cookies.set("refresh_token", payload.data.refresh_token, {
-                expires: 7,
-                secure: true,
-                sameSite: "strict",
-            });
-
+            Cookies.set("access_token", payload.data.access_token, { expires: 1, secure: true, sameSite: "strict" });
+            Cookies.set("refresh_token", payload.data.refresh_token, { expires: 7, secure: true, sameSite: "strict" });
             Cookies.set("user_id", payload.data.user_id);
             Cookies.set("email", payload.data.email);
+            if (payload.data.username) Cookies.set("username", payload.data.username);
 
-            if (payload.data.username) {
-                Cookies.set("username", payload.data.username);
-            }
-
-            showAlert(
-                "OTP verified successfully. Welcome!",
-                "success",
-                "Verified"
-            );
+            showAlert("OTP verified successfully. Welcome!", "success", "Verified");
 
             setTimeout(() => {
                 navigate("/dashboard", {
@@ -137,14 +111,8 @@ const SignOtp = ({ email: propEmail }) => {
                     },
                 });
             }, 800);
-
         } catch (error) {
-            console.error("OTP verify error:", error);
-            showAlert(
-                "Server not reachable. Please try again.",
-                "error",
-                "Network Error"
-            );
+            showAlert("Server not reachable. Please try again.", "error", "Network Error");
         } finally {
             setLoading(false);
         }
@@ -152,99 +120,92 @@ const SignOtp = ({ email: propEmail }) => {
 
     return (
         <>
-            <div
-                className="min-h-screen flex items-center justify-center px-4"
-                style={{
-                    backgroundImage: `url(${theme === "dark" ? bgDark : bgLight})`,
-                    backgroundColor: theme === "dark" ? "#000000" : "#f6f6f6",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                }}
-            >
-                {/* Glow */}
-                <div
-                    className="absolute rounded-[100%] pointer-events-none z-0"
-                    style={{
-                        width: "990px",
-                        height: "562px",
-                        top: "-281px",
-                        left: "49%",
-                        transform: "translateX(-50%)",
-                        background: "rgba(255,255,255,0.15)",
-                        filter: "blur(120px)",
-                    }}
-                />
+            <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
+                {/* Animated Gradient Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20" />
 
-                {/* CARD */}
-                <div
-                    className={`w-[92%] max-w-[620px] rounded-[28px] px-10 py-12 text-center shadow-[0_40px_120px_rgba(0,0,0,0.08)]
-                    ${theme === "dark"
-                            ? "bg-[#111] border border-[#2a2a2a] text-white"
-                            : "bg-white border border-[#e2e2e2] text-[#222]"
-                        }`}
-                >
-                    <h1 className="text-2xl font-semibold mb-6">
-                        Verify Your Email
-                    </h1>
+                {/* Animated Orbs */}
+                <div className="orb orb-cyan animate-float" style={{ width: '400px', height: '400px', top: '10%', left: '10%', animationDuration: '10s' }} />
+                <div className="orb orb-purple animate-float" style={{ width: '350px', height: '350px', bottom: '10%', right: '15%', animationDelay: '2s', animationDuration: '12s' }} />
+                <div className="orb orb-blue animate-float" style={{ width: '300px', height: '300px', top: '50%', right: '20%', animationDelay: '4s', animationDuration: '14s' }} />
 
-                    <p className="text-sm font-medium mb-2">Enter Code</p>
+                {/* Content */}
+                <div className="relative z-10 w-full max-w-md animate-fade-up">
+                    {/* Glass Card */}
+                    <div className="glass-card rounded-3xl p-8 shadow-2xl">
+                        {/* Header */}
+                        <div className="text-center mb-8">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500/20 to-cyan-500/20 rounded-full mb-4">
+                                <HiShieldCheck className="text-4xl text-purple-500" />
+                            </div>
+                            <h1 className="text-3xl font-bold theme-text mb-2">
+                                Verify Email
+                            </h1>
+                            <p className="theme-text-muted text-sm">
+                                Enter the 6-digit code sent to
+                            </p>
+                            <p className="theme-text font-medium text-sm mt-1">
+                                {email}
+                            </p>
+                        </div>
 
-                    <p className={`text-xs mb-6 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                        We&apos;ve sent a code to {email}
-                    </p>
+                        {/* OTP Inputs */}
+                        <div className="flex justify-center gap-3 mb-6">
+                            {otp.map((v, i) => (
+                                <input
+                                    key={i}
+                                    ref={(el) => (inputRefs.current[i] = el)}
+                                    value={v}
+                                    maxLength={1}
+                                    onChange={(e) => handleChange(i, e.target.value)}
+                                    onKeyDown={(e) => handleKeyDown(i, e)}
+                                    className="w-12 h-14 sm:w-14 sm:h-16 text-center text-xl font-bold bg-white/50 dark:bg-white/5 border-2 theme-border rounded-xl theme-text focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 outline-none transition-all duration-300"
+                                />
+                            ))}
+                        </div>
 
-                    {/* OTP Inputs */}
-                    <div className="flex justify-center gap-4 mb-4">
-                        {otp.map((v, i) => (
-                            <input
-                                key={i}
-                                ref={(el) => (inputRefs.current[i] = el)}
-                                value={v}
-                                maxLength={1}
-                                onChange={(e) => handleChange(i, e.target.value)}
-                                className={`w-12 h-12 text-center text-lg font-semibold rounded-md outline-none transition
-                                ${theme === "dark"
-                                        ? "bg-[#111] border border-[#444] text-white focus:border-white"
-                                        : "bg-white border border-[#ccc] text-[#333] focus:border-[#666]"
-                                    }`}
-                            />
-                        ))}
+                        {/* Timer / Resend */}
+                        <div className="text-center mb-6">
+                            {timer > 0 ? (
+                                <p className="theme-text-muted text-sm">
+                                    Resend code in <span className="font-semibold theme-text">00:{String(timer).padStart(2, "0")}</span>
+                                </p>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent hover:from-purple-700 hover:to-cyan-700 transition-all"
+                                >
+                                    Resend Code
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Verify Button */}
+                        <button
+                            onClick={handleVerifyOtp}
+                            disabled={loading}
+                            className="btn-primary w-full py-3.5 rounded-xl font-semibold text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+                        >
+                            {loading && (
+                                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            )}
+                            {loading ? "Verifying..." : "Verify Code"}
+                        </button>
+
+                        {/* Help Text */}
+                        <p className="text-center theme-text-muted text-xs mt-6">
+                            Didn't receive the code? Check your spam folder
+                        </p>
                     </div>
-
-                    {/* Timer */}
-                    <p className={`text-xs mb-8 ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                        Send Code Again 00:{String(timer).padStart(2, "0")}
-                    </p>
-
-                    {/* Verify Button */}
-                    <button
-                        onClick={handleVerifyOtp}
-                        disabled={loading}
-                        className={`w-full h-[48px] rounded-full font-semibold transition-all
-                        flex items-center justify-center gap-2
-                        ${theme === "dark"
-                                ? "bg-white text-black hover:bg-gray-200"
-                                : "bg-white border border-[#ddd] hover:shadow-md"
-                            }
-                        ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
-                    >
-                        {loading && (
-                            <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        )}
-                        {loading ? "Verifying..." : "Verify"}
-                    </button>
                 </div>
             </div>
 
-            {/* 🔔 ALERT */}
             <AppAlert
                 open={alert.open}
                 message={alert.message}
                 severity={alert.severity}
                 title={alert.title}
-                onClose={() =>
-                    setAlert(prev => ({ ...prev, open: false }))
-                }
+                onClose={() => setAlert(prev => ({ ...prev, open: false }))}
             />
         </>
     );

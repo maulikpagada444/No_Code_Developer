@@ -32,7 +32,6 @@
 //         <Route path="/domain/connect" element={<ConnectDomain />} />
 //         <Route path="/domain/custom" element={<CustomDomain />} />
 //         <Route path="/color-selection" element={<ColorSelection />} />
-
 //       </Routes>
 //     </ThemeProvider>
 //   );

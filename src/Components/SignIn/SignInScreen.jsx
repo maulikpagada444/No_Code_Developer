@@ -4,18 +4,11 @@ import {
     FaEye,
     FaEyeSlash,
     FaGoogle,
-    FaFacebookF,
-    FaInstagram,
-    FaTwitter,
-    FaYoutube,
-    FaLinkedin,
     FaRegUser,
 } from "react-icons/fa";
+import { HiSparkles } from "react-icons/hi";
 import { MdLockOutline } from "react-icons/md";
 import Cookies from "js-cookie";
-
-import bgLight from "../../../Public/bg.png";
-import bgDark from "../../../Public/bg_black.png";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import AppAlert from "../common/AppAlert.jsx";
 import { useGoogleLogin } from "@react-oauth/google";
@@ -27,7 +20,6 @@ const SignInScreen = ({ setStep }) => {
     const [googleLoading, setGoogleLoading] = useState(false);
 
     const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -51,11 +43,9 @@ const SignInScreen = ({ setStep }) => {
                 severity: location.state.alert.severity,
             });
 
-            // 🔥 CLEAR STATE AFTER SHOWING ALERT
             navigate(location.pathname, { replace: true });
         }
     }, [location, navigate]);
-
 
     const [formData, setFormData] = useState({
         email: "",
@@ -91,7 +81,6 @@ const SignInScreen = ({ setStep }) => {
                 throw new Error(data?.message || "Login failed");
             }
 
-            // ✅ SAVE COOKIES
             Cookies.set("access_token", data.data.access_token);
             Cookies.set("refresh_token", data.data.refresh_token);
             Cookies.set("user_id", data.data.user_id);
@@ -116,13 +105,11 @@ const SignInScreen = ({ setStep }) => {
         }
     };
 
-
-    /* ---------------- GOOGLE SIGNUP ---------------- */
+    /* ---------------- GOOGLE SIGNIN ---------------- */
     const handleGoogleSignup = async (googleResponse) => {
         try {
             setGoogleLoading(true);
 
-            // Fetch user profile from Google
             const userInfoRes = await fetch(
                 "https://www.googleapis.com/oauth2/v3/userinfo",
                 {
@@ -175,185 +162,154 @@ const SignInScreen = ({ setStep }) => {
         }
     };
 
-
     const RegisterUser = useGoogleLogin({
         onSuccess: handleGoogleSignup,
         onError: () => showAlert("Google login failed", "error"),
     });
 
-
     return (
         <>
-            <div
-                className="min-h-screen flex items-center justify-center px-4"
-                style={{
-                    backgroundImage: `url(${theme === "dark" ? bgDark : bgLight})`,
-                    backgroundColor: theme === "dark" ? "#000000" : "#f6f6f6",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                }}
-            >
-                {/* --- GLOW EFFECT --- */}
-                <div
-                    className="absolute rounded-[100%] pointer-events-none z-0"
-                    style={{
-                        width: '990px',
-                        height: '562px',
-                        top: '-281px',
-                        left: '48%',
-                        transform: 'translateX(-50%)',
-                        background: 'rgba(255, 255, 255, 0.15)',
-                        filter: 'blur(120px)',
-                    }}
-                ></div>
-                <div className="w-full max-w-8xl flex justify-center mx-auto grid grid-cols-1 lg:grid-cols-[520px_100px] gap-10 items-center">
+            <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
+                {/* Animated Gradient Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20" />
 
-                    {/* CARD */}
-                    <div
-                        className={`rounded-[24px] px-10 py-12 border shadow-[0_30px_80px_rgba(0,0,0,0.08)]
-                        ${theme === "dark"
-                                ? "bg-black border-gray-700 text-white"
-                                : "bg-white border-gray-200 text-gray-900"
-                            }`}
-                    >
-                        <h2 className="text-2xl font-semibold text-center">
-                            Welcome Back
-                        </h2>
+                {/* Animated Orbs */}
+                <div className="orb orb-blue animate-float" style={{ width: '450px', height: '450px', top: '15%', left: '5%', animationDuration: '9s' }} />
+                <div className="orb orb-purple animate-float" style={{ width: '350px', height: '350px', bottom: '10%', right: '10%', animationDelay: '3s', animationDuration: '11s' }} />
+                <div className="orb orb-cyan animate-float" style={{ width: '280px', height: '280px', top: '40%', right: '25%', animationDelay: '5s', animationDuration: '13s' }} />
 
-                        <p className={`text-sm text-center mt-2 mb-8
-                            ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                            Please enter your details to sign in
-                        </p>
+                {/* Content */}
+                <div className="relative z-10 w-full max-w-3xl animate-fade-up">
+                    {/* Glass Card */}
+                    <div className="glass-card rounded-3xl p-8 shadow-2xl">
+                        {/* Header */}
+                        <div className="text-center mb-8">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full mb-4">
+                                <HiSparkles className="text-blue-500 text-xl" />
+                                <span className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                    Welcome Back
+                                </span>
+                            </div>
+                            <h1 className="text-3xl font-bold theme-text mb-2">
+                                Sign In
+                            </h1>
+                            <p className="theme-text-muted">
+                                Continue your creative journey
+                            </p>
+                        </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-5">
+                        <form className="space-y-4" onSubmit={handleSubmit}>
+                            {/* Horizontal Input Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Email Input */}
+                                <ModernInput
+                                    icon={<FaRegUser />}
+                                    name="email"
+                                    placeholder="Username or Email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    theme={theme}
+                                />
 
-                            <Input
-                                icon={<FaRegUser />}
-                                name="email"
-                                placeholder="Username or Email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                theme={theme}
-                            />
+                                {/* Password Input */}
+                                <ModernInput
+                                    icon={<MdLockOutline />}
+                                    type={showPassword ? "text" : "password"}
+                                    name="password"
+                                    placeholder="Enter your password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    theme={theme}
+                                    rightIcon={
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="theme-text-secondary hover:theme-text transition-colors"
+                                        >
+                                            {showPassword ? <FaEyeSlash className="text-lg" /> : <FaEye className="text-lg" />}
+                                        </button>
+                                    }
+                                />
+                            </div>
 
-                            <Input
-                                icon={<MdLockOutline />}
-                                type={showPassword ? "text" : "password"}
-                                name="password"
-                                placeholder="Enter Your Password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                theme={theme}
-                                rightIcon={
-                                    <button type="button" onClick={() => setShowPassword(!showPassword)}>
-                                        {showPassword ? <FaEyeSlash /> : <FaEye />}
-                                    </button>
-                                }
-                            />
-
-                            <div className="text-right text-xs">
+                            {/* Forgot Password */}
+                            <div className="text-right">
                                 <button
                                     type="button"
                                     onClick={() => setStep(2)}
-                                    className={`hover:underline ${theme === "dark"
-                                        ? "text-gray-300"
-                                        : "text-gray-500"
-                                        }`}
+                                    className="text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:from-blue-700 hover:to-purple-700 transition-all"
                                 >
                                     Forgot Password?
                                 </button>
                             </div>
 
+                            {/* Sign In Button */}
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className={`w-full py-3 rounded-full border font-medium transition flex items-center justify-center gap-2
-    ${theme === "dark"
-                                        ? "bg-black border-white text-white hover:bg-white hover:text-black"
-                                        : "bg-white border-gray-300 hover:shadow-md"
-                                    }
-    ${loading ? "opacity-60 cursor-not-allowed" : ""}`}
+                                className="btn-primary w-full py-3.5 rounded-xl font-semibold text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
                             >
                                 {loading && (
-                                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                 )}
                                 {loading ? "Signing in..." : "Sign In"}
                             </button>
 
-                            <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-gray-400">
-                                <span className="flex-1 h-px bg-gray-300/50" />
-                                Or Continue with
-                                <span className="flex-1 h-px bg-gray-300/50" />
+                            {/* Divider */}
+                            <div className="relative my-6">
+                                <div className="absolute inset-0 flex items-center">
+                                    <div className="w-full border-t theme-border"></div>
+                                </div>
+                                <div className="relative flex justify-center text-xs uppercase">
+                                    <span className="bg-white dark:bg-gray-900 px-3 theme-text-muted font-medium">
+                                        Or continue with
+                                    </span>
+                                </div>
                             </div>
 
-                            {/* <div className="flex justify-center">
-                                <GoogleLogin
-                                    onSuccess={handleGoogleSignup}
-                                    onError={() =>
-                                        showAlert("Google login failed", "error", "Google Error")
-                                    }
-                                />
-                            </div> */}
-
+                            {/* Google Sign In Button */}
                             <button
                                 onClick={(e) => {
                                     e.preventDefault();
                                     RegisterUser();
                                 }}
                                 disabled={googleLoading}
-                                className={`${googleLoading
-                                    ? "bg-gray-300 cursor-not-allowed"
-                                    : "bg-white hover:bg-gray-200"
-                                    } w-2/2 p-3 flex items-center justify-center gap-3 rounded-full`}
+                                className="w-full py-3.5 px-4 bg-white dark:bg-white/10 border-2 theme-border rounded-xl font-semibold theme-text hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3"
                             >
                                 {googleLoading ? (
-                                    <span className="text-black text-sm font-semibold">Loading...</span>
+                                    <>
+                                        <span className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                        <span>Connecting...</span>
+                                    </>
                                 ) : (
                                     <>
-                                        <FaGoogle className="text-red-500 text-lg" />
-                                        <span className="text-black text-sm font-semibold">
-                                            Continue with Google
-                                        </span>
+                                        <FaGoogle className="text-red-500 text-xl" />
+                                        <span>Sign in with Google</span>
                                     </>
                                 )}
                             </button>
 
-
-                            <p className={`text-center text-sm
-                                ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                                Don’t have an account?
-                                <Link to="/signup" className="ml-1 font-semibold">
+                            {/* Sign Up Link */}
+                            <p className="text-center theme-text-muted text-sm pt-4">
+                                Don't have an account?{" "}
+                                <Link
+                                    to="/signup"
+                                    className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:from-blue-700 hover:to-purple-700 transition-all"
+                                >
                                     Sign Up
                                 </Link>
                             </p>
                         </form>
                     </div>
 
-                    {/* SOCIAL */}
-                    <div className="flex flex-col items-center gap-4">
-                        <p className="text-xs tracking-widest font-semibold text-gray-500">
-                            FOLLOW:-
-                        </p>
-
-                        {[FaFacebookF, FaInstagram, FaTwitter, FaYoutube, FaLinkedin].map(
-                            (Icon, i) => (
-                                <button
-                                    key={i}
-                                    className={`w-10 h-10 rounded-xl border flex items-center justify-center
-                                    ${theme === "dark"
-                                            ? "bg-black border-gray-600 text-gray-300"
-                                            : "bg-white border-gray-300 text-gray-600"
-                                        }`}
-                                >
-                                    <Icon />
-                                </button>
-                            )
-                        )}
-                    </div>
+                    {/* Bottom Decorative Text */}
+                    <p className="text-center mt-6 theme-text-muted text-xs">
+                        Protected by industry-standard encryption
+                    </p>
                 </div>
             </div>
 
-            {/* 🔔 GLOBAL ALERT */}
+            {/* Alert */}
             <AppAlert
                 open={alert.open}
                 message={alert.message}
@@ -364,23 +320,22 @@ const SignInScreen = ({ setStep }) => {
     );
 };
 
-const Input = ({ icon, rightIcon, theme, ...props }) => (
-    <div className={`flex items-center gap-3 px-4 py-3 rounded-2xl border
-    ${theme === "dark"
-            ? "border-gray-600 focus-within:border-white"
-            : "border-gray-300 focus-within:border-gray-500"
-        }`}>
-        <span className="text-gray-400">{icon}</span>
+// Modern Input Component
+const ModernInput = ({ icon, rightIcon, theme, ...props }) => (
+    <div className="relative group">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none theme-text-muted group-focus-within:text-blue-500 transition-colors">
+            {icon}
+        </div>
         <input
             {...props}
             required
-            className={`w-full text-sm bg-transparent outline-none
-            ${theme === "dark"
-                    ? "text-white placeholder-gray-500"
-                    : "text-black placeholder-gray-400"
-                }`}
+            className="w-full pl-12 pr-12 py-3.5 bg-white/50 dark:bg-white/5 border-2 theme-border rounded-xl theme-text placeholder:theme-text-muted focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 outline-none transition-all duration-300"
         />
-        {rightIcon && <span className="text-gray-400">{rightIcon}</span>}
+        {rightIcon && (
+            <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
+                {rightIcon}
+            </div>
+        )}
     </div>
 );
 

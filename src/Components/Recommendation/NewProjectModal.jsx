@@ -1,36 +1,47 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect, useRef } from "react";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import AppAlert from "../common/AppAlert.jsx";
+import { FiFolder, FiX, FiArrowRight } from "react-icons/fi";
+import { HiSparkles } from "react-icons/hi2";
+import { gsap } from "gsap";
 
 const NewProjectModal = ({ onClose }) => {
     const { theme } = useContext(ThemeContext);
     const navigate = useNavigate();
 
+    const modalRef = useRef(null);
+    const backdropRef = useRef(null);
+
+    useEffect(() => {
+        gsap.fromTo(backdropRef.current,
+            { opacity: 0 },
+            { opacity: 1, duration: 0.3 }
+        );
+        gsap.fromTo(modalRef.current,
+            { opacity: 0, scale: 0.9, y: 20 },
+            { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: "back.out(1.7)" }
+        );
+    }, []);
+
     const [projectName, setProjectName] = useState("");
     const [loading, setLoading] = useState(false);
+    const [alert, setAlert] = useState({ open: false, message: "", severity: "success" });
 
-    const [alert, setAlert] = useState({
-        open: false,
-        message: "",
-        severity: "success",
-        title: "",
-    });
-
-    const showAlert = (message, severity = "error", title = "") => {
-        setAlert({ open: true, message, severity, title });
+    const showAlert = (message, severity = "error") => {
+        setAlert({ open: true, message, severity });
     };
 
     const handleCreateProject = async () => {
         if (!projectName.trim()) {
-            showAlert("Project name is required", "warning");
+            gsap.to(modalRef.current, { x: [-10, 10, -10, 10, 0], duration: 0.4 });
+            showAlert("Please enter a project name", "warning");
             return;
         }
 
         try {
             setLoading(true);
-
             const BASE_URL = import.meta.env.VITE_API_BASE_URL;
             const accessToken = Cookies.get("access_token");
 
@@ -40,127 +51,112 @@ const NewProjectModal = ({ onClose }) => {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${accessToken}`,
                 },
-                body: JSON.stringify({
-                    project_name: projectName.trim(),
-                }),
+                body: JSON.stringify({ project_name: projectName.trim() }),
             });
 
             const data = await response.json();
 
             if (!response.ok || data.status !== true) {
+                gsap.to(modalRef.current, { x: [-10, 10, -10, 10, 0], duration: 0.4 });
                 throw new Error(data?.message || "Project creation failed");
             }
 
-            // ✅ Save Project ID
-            Cookies.set("project_id", data.data.project_id, {
-                secure: true,
-                sameSite: "Strict",
-            });
+            Cookies.set("project_id", data.data.project_id, { secure: true, sameSite: "Strict" });
 
-            showAlert("Project created successfully", "success");
+            gsap.to(modalRef.current, { scale: 1.05, opacity: 0, duration: 0.3 });
 
             setTimeout(() => {
                 onClose();
                 navigate("/project/workspace");
-            }, 700);
+            }, 300);
 
         } catch (error) {
-            console.error("Create project error:", error);
             showAlert(error.message || "Something went wrong", "error");
         } finally {
             setLoading(false);
         }
     };
 
+    const handleClose = () => {
+        if (loading) return;
+        gsap.to(modalRef.current, { scale: 0.9, opacity: 0, duration: 0.2 });
+        gsap.to(backdropRef.current, { opacity: 0, duration: 0.2, onComplete: onClose });
+    };
+
     return (
         <>
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
-
-                {/* BACKDROP */}
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center px-4">
+                {/* Backdrop */}
                 <div
-                    className={`
-                        absolute inset-0
-                        ${theme === "dark"
-                            ? "bg-black/50 backdrop-blur-md"
-                            : "bg-black/30 backdrop-blur-sm"
-                        }
-                    `}
-                    onClick={loading ? undefined : onClose}
+                    ref={backdropRef}
+                    className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                    onClick={handleClose}
                 />
 
-                {/* MODAL */}
+                {/* Modal */}
                 <div
-                    className={`
-                        relative z-10 w-full max-w-md p-8
-                        rounded-3xl border backdrop-blur-xl
-                        ${theme === "dark"
-                            ? "bg-gradient-to-br from-white/10 to-white/5 border-white/10 text-white shadow-[0_0_80px_rgba(0,0,0,0.6)]"
-                            : "bg-white border-gray-200 text-black shadow-xl"
-                        }
-                    `}
+                    ref={modalRef}
+                    className="relative z-10 w-full max-w-md p-8 rounded-2xl glass-card border border-white/10"
                 >
-                    <h2 className="text-2xl font-semibold text-center mb-8">
-                        Project Details
-                    </h2>
+                    {/* Close Button */}
+                    <button
+                        onClick={handleClose}
+                        className="absolute top-4 right-4 p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-all"
+                    >
+                        <FiX size={18} />
+                    </button>
 
-                    {/* INPUT */}
+                    {/* Icon */}
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-purple-500/30">
+                        <FiFolder className="text-white text-2xl" />
+                    </div>
+
+                    {/* Title */}
+                    <h2 className="text-2xl font-bold text-center text-white mb-2">New Project</h2>
+                    <p className="text-gray-500 text-center text-sm mb-8">Give your project a name to get started</p>
+
+                    {/* Input */}
                     <div className="mb-6">
-                        <label
-                            className={`text-sm mb-2 block ${theme === "dark"
-                                ? "text-gray-300"
-                                : "text-gray-600"
-                                }`}
-                        >
-                            Project Name
-                        </label>
-
+                        <label className="block text-gray-400 text-sm mb-2">Project Name</label>
                         <input
                             type="text"
+                            autoFocus
                             value={projectName}
                             onChange={(e) => setProjectName(e.target.value)}
-                            placeholder="Enter Project Name"
+                            placeholder="e.g., My Portfolio Website"
                             disabled={loading}
-                            className={`
-                                w-full px-4 py-3 rounded-xl outline-none text-sm border
-                                ${theme === "dark"
-                                    ? "bg-white/5 border-white/10 text-white placeholder-gray-500"
-                                    : "bg-gray-50 border-gray-300 text-black placeholder-gray-400"
-                                }
-                            `}
+                            onKeyDown={(e) => e.key === "Enter" && handleCreateProject()}
+                            className="input-dark w-full"
                         />
                     </div>
 
-                    {/* BUTTON */}
+                    {/* Create Button */}
                     <button
                         onClick={handleCreateProject}
                         disabled={loading}
-                        className={`
-                            w-full py-3 rounded-full font-medium transition
-                            flex items-center justify-center gap-2
-                            ${theme === "dark"
-                                ? "bg-white/10 border border-white/20 hover:bg-white/20"
-                                : "bg-black text-white hover:bg-black/90"
-                            }
-                            ${loading ? "opacity-60 cursor-not-allowed" : ""}
-                        `}
+                        className="w-full py-4 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-purple-500/30 transition-all disabled:opacity-60"
                     >
-                        {loading && (
-                            <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        {loading ? (
+                            <>
+                                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <span>Creating...</span>
+                            </>
+                        ) : (
+                            <>
+                                <HiSparkles />
+                                <span>Create Project</span>
+                                <FiArrowRight />
+                            </>
                         )}
-                        {loading ? "Creating..." : "Continue"}
                     </button>
                 </div>
             </div>
 
-            {/* 🔔 ALERT */}
             <AppAlert
                 open={alert.open}
                 message={alert.message}
                 severity={alert.severity}
-                title={alert.title}
-                onClose={() =>
-                    setAlert(prev => ({ ...prev, open: false }))
-                }
+                onClose={() => setAlert(prev => ({ ...prev, open: false }))}
             />
         </>
     );

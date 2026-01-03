@@ -1,19 +1,9 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
-    FiHome,
-    FiUser,
-    FiLayers,
-    FiShoppingCart,
-    FiMail,
-    FiCpu,
-    FiMessageCircle,
-    FiHelpCircle,
-    FiDollarSign,
-    FiPackage,
-    FiImage,
-    FiVideo,
-    FiCalendar,
+    FiHome, FiUser, FiLayers, FiShoppingCart, FiMail, FiCpu,
+    FiMessageCircle, FiHelpCircle, FiDollarSign, FiPackage, FiImage, FiVideo, FiCalendar, FiCheck, FiBox
 } from "react-icons/fi";
+import { gsap } from "gsap";
 
 export const MODULES_OPTIONS = [
     { label: "Home", value: "home", icon: <FiHome /> },
@@ -25,91 +15,139 @@ export const MODULES_OPTIONS = [
     { label: "Portfolio", value: "portfolio", icon: <FiImage /> },
     { label: "Testimonials", value: "testimonials", icon: <FiMessageCircle /> },
     { label: "FAQ", value: "faq", icon: <FiHelpCircle /> },
-    { label: "Pricing Tables", value: "pricing_tables", icon: <FiDollarSign /> },
+    { label: "Pricing", value: "pricing_tables", icon: <FiDollarSign /> },
     { label: "Products", value: "products", icon: <FiPackage /> },
     { label: "Gallery", value: "gallery", icon: <FiImage /> },
     { label: "Video Intro", value: "video_intro", icon: <FiVideo /> },
-    { label: "Booking Sys", value: "booking_sys", icon: <FiCalendar /> },
+    { label: "Booking", value: "booking_sys", icon: <FiCalendar /> },
 ];
 
+// Normalize feature option from API
+const normalizeOption = (opt, index) => {
+    if (!opt) return null;
+
+    // Already normalized
+    if (typeof opt === 'object' && opt.label && opt.value) {
+        return opt;
+    }
+
+    // String value
+    if (typeof opt === 'string') {
+        const label = opt
+            .replace(/[_-]/g, ' ')
+            .replace(/\b\w/g, c => c.toUpperCase());
+        return { value: opt, label };
+    }
+
+    // Object with different keys
+    if (typeof opt === 'object') {
+        const value = opt.value || opt.id || opt.name || opt.key || `feature_${index}`;
+        const label = opt.label || opt.title || opt.name || opt.display_name ||
+            (typeof value === 'string' ? value.replace(/[_-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : `Feature ${index + 1}`);
+        return { value, label };
+    }
+
+    return null;
+};
+
 const FeaturesSelection = ({
-    isDark,
+    isDark = true,
     selected = [],
     setSelected,
     options = MODULES_OPTIONS,
 }) => {
+    const buttonsRef = useRef([]);
+
+    // Normalize all options
+    const normalizedOptions = options
+        .map((opt, i) => normalizeOption(opt, i))
+        .filter(Boolean);
+
+    console.log("Features Options (raw):", options);
+    console.log("Features Options (normalized):", normalizedOptions);
+
+    useEffect(() => {
+        const validButtons = buttonsRef.current.filter(Boolean);
+        if (validButtons.length > 0) {
+            gsap.fromTo(
+                validButtons,
+                { opacity: 0, scale: 0.9, y: 15 },
+                { opacity: 1, scale: 1, y: 0, stagger: 0.03, duration: 0.3, ease: "back.out(1.7)" }
+            );
+        }
+    }, [normalizedOptions]);
+
+    const handleSelect = (optionValue, e) => {
+        if (e) {
+            gsap.to(e.currentTarget, { scale: 0.95, duration: 0.1, yoyo: true, repeat: 1 });
+        }
+
+        if (selected.includes(optionValue)) {
+            setSelected(selected.filter(item => item !== optionValue));
+        } else {
+            setSelected([...selected, optionValue]);
+        }
+    };
+
+    // If no options, show message
+    if (normalizedOptions.length === 0) {
+        return (
+            <div className="text-center py-12">
+                <FiBox className="text-4xl text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-500">No features available</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="mb-16">
+        <div>
             {/* Header */}
-            <div
-                className={`
-          flex items-center justify-between px-6 py-4 rounded-t-2xl border-b
-          ${isDark ? "bg-white/5 border-white/10" : "bg-gray-100 border-gray-200"}
-        `}
-            >
-                <div className="flex items-center gap-2 text-sm font-semibold opacity-80">
-                    <FiLayers /> AVAILABLE MODULES
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2 text-gray-400 text-sm">
+                    <FiLayers size={16} />
+                    <span>Available Modules</span>
                 </div>
-                <div
-                    className={`
-            px-3 py-1 rounded-full text-xs font-medium border
-            ${isDark ? "bg-black/30 border-white/10" : "bg-white border-gray-300"}
-          `}
-                >
-                    Selected: {selected.length} / 4
+                <div className={`px-3 py-1 rounded-full text-xs font-semibold ${selected.length > 0
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        : 'bg-white/5 text-gray-500 border border-white/10'
+                    }`}>
+                    {selected.length} selected
                 </div>
             </div>
 
             {/* Grid */}
-            <div
-                className={`
-          p-6 rounded-b-2xl border border-t-0 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4
-          ${isDark ? "bg-[#111] border-white/10" : "bg-gray-50 border-gray-200"}
-        `}
-            >
-                {options.map((option, i) => {
-                    const optionValue = option?.value || option?.label;
-                    if (!optionValue) return null;
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {normalizedOptions.map((option, i) => {
+                    const optionValue = option.value;
+                    const optionLabel = option.label || optionValue;
                     const isSelected = selected.includes(optionValue);
+
+                    // Find matching icon or use default
+                    const defaultOption = MODULES_OPTIONS.find(
+                        m => m.value === optionValue ||
+                            m.label.toLowerCase() === optionLabel.toLowerCase()
+                    );
+                    const icon = defaultOption?.icon || <FiBox />;
 
                     return (
                         <button
                             key={i}
-                            onClick={() => {
-                                if (isSelected) {
-                                    setSelected(selected.filter(item => item !== optionValue));
-                                } else if (selected.length < 4) {
-                                    setSelected([...selected, optionValue]);
-                                }
-                            }}
-                            className={`
-                relative flex items-center gap-3 px-5 py-3.5 rounded-full border transition-all text-left
-                ${isSelected
-                                    ? isDark
-                                        ? "bg-white text-black border-white"
-                                        : "bg-black text-white border-black"
-                                    : isDark
-                                        ? "bg-white/5 border-white/5 hover:bg-white/10"
-                                        : "bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm"
-                                }
-              `}
+                            ref={(el) => (buttonsRef.current[i] = el)}
+                            onClick={(e) => handleSelect(optionValue, e)}
+                            className={`relative flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${isSelected
+                                    ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 border-purple-500/50 text-white'
+                                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white hover:border-white/20'
+                                }`}
                         >
-                            <span className={`text-lg ${isSelected ? "opacity-100" : "opacity-60"}`}>
-                                {option.icon}
+                            <span className={`text-lg transition-colors ${isSelected ? 'text-purple-400' : ''}`}>
+                                {icon}
                             </span>
-
-                            <div className="flex flex-col leading-none">
-                                <span className="text-sm font-medium">{option.label}</span>
-                                <span className="text-[10px] opacity-60 mt-0.5">Module</span>
-                            </div>
+                            <span className="text-sm font-medium truncate">{optionLabel}</span>
 
                             {isSelected && (
-                                <div
-                                    className={`
-                    absolute right-4 w-2 h-2 rounded-full
-                    ${isDark ? "bg-black" : "bg-white"}
-                  `}
-                                />
+                                <div className="absolute right-3 w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
+                                    <FiCheck size={12} className="text-white" />
+                                </div>
                             )}
                         </button>
                     );

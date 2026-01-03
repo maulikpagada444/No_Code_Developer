@@ -1,9 +1,7 @@
 import React, { useEffect, useRef, useState, useContext } from "react";
+import { HiShieldCheck } from "react-icons/hi";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import AppAlert from "../common/AppAlert.jsx";
-
-import bgLight from "../../../Public/bg.png";
-import bgDark from "../../../Public/bg_black.png";
 
 const OTP_LENGTH = 6;
 const OTP_TIMER = 60;
@@ -51,20 +49,22 @@ const ForgotPasswordOtp = ({ setStep, email }) => {
         }
     };
 
-    /* 🔐 VERIFY OTP */
+    const handleKeyDown = (index, e) => {
+        if (e.key === "Backspace" && !otpValues[index] && index > 0) {
+            inputRefs.current[index - 1]?.focus();
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         if (otpValues.includes("")) {
             showAlert("Please enter the complete 6-digit code", "warning");
             return;
         }
 
         const otp = otpValues.join("");
-
         try {
             setIsSubmitting(true);
-
             const response = await fetch(
                 `${import.meta.env.VITE_API_BASE_URL}/auth/forgot-password/verify-otp`,
                 {
@@ -75,38 +75,20 @@ const ForgotPasswordOtp = ({ setStep, email }) => {
             );
 
             const data = await response.json();
-
             if (!response.ok || data.status === false) {
-                showAlert(
-                    data?.message || "Invalid or expired OTP",
-                    "error",
-                    "Verification Failed"
-                );
+                showAlert(data?.message || "Invalid or expired OTP", "error", "Verification Failed");
                 return;
             }
 
-            showAlert(
-                "OTP verified successfully",
-                "success",
-                "Verified"
-            );
-
-            setTimeout(() => {
-                setStep(4);
-            }, 1000);
-
+            showAlert("OTP verified successfully", "success", "Verified");
+            setTimeout(() => setStep(4), 1000);
         } catch (err) {
-            showAlert(
-                "Server not reachable. Please try again.",
-                "error",
-                "Network Error"
-            );
+            showAlert("Server not reachable. Please try again.", "error", "Network Error");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    /* 🔁 RESEND OTP */
     const handleResendOtp = async () => {
         try {
             setResendLoading(true);
@@ -122,19 +104,9 @@ const ForgotPasswordOtp = ({ setStep, email }) => {
 
             setOtpValues(Array(OTP_LENGTH).fill(""));
             setTimer(OTP_TIMER);
-
-            showAlert(
-                "OTP resent successfully",
-                "success",
-                "Code Sent"
-            );
-
+            showAlert("OTP resent successfully", "success", "Code Sent");
         } catch {
-            showAlert(
-                "Failed to resend OTP",
-                "error",
-                "Request Failed"
-            );
+            showAlert("Failed to resend OTP", "error", "Request Failed");
         } finally {
             setResendLoading(false);
         }
@@ -142,52 +114,37 @@ const ForgotPasswordOtp = ({ setStep, email }) => {
 
     return (
         <>
-            <div
-                className="min-h-screen flex items-center justify-center px-4"
-                style={{
-                    backgroundImage: `url(${theme === "dark" ? bgDark : bgLight})`,
-                    backgroundColor: theme === "dark" ? "#000000" : "#f6f6f6",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                }}
-            >
-                {/* Glow */}
-                <div
-                    className="absolute rounded-[100%] pointer-events-none z-0"
-                    style={{
-                        width: "990px",
-                        height: "562px",
-                        top: "-281px",
-                        left: "49%",
-                        transform: "translateX(-50%)",
-                        background: "rgba(255,255,255,0.15)",
-                        filter: "blur(120px)",
-                    }}
-                />
+            <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12">
+                {/* Animated Gradient Background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20" />
 
-                <div className="w-full max-w-md">
-                    <div
-                        className={`rounded-[24px] px-10 py-12 border shadow-[0_30px_80px_rgba(0,0,0,0.08)]
-                        ${theme === "dark"
-                                ? "bg-black border-gray-700 text-white"
-                                : "bg-white border-gray-200 text-gray-900"
-                            }`}
-                    >
-                        <h2 className="text-2xl font-semibold text-center">
-                            Verify Your Email
-                        </h2>
+                {/* Animated Orbs */}
+                <div className="orb orb-purple animate-float" style={{ width: '440px', height: '440px', top: '10%', left: '12%', animationDuration: '12s' }} />
+                <div className="orb orb-cyan animate-float" style={{ width: '360px', height: '360px', bottom: '12%', right: '10%', animationDelay: '4s', animationDuration: '14s' }} />
+                <div className="orb orb-blue animate-float" style={{ width: '300px', height: '300px', top: '48%', right: '22%', animationDelay: '6s', animationDuration: '16s' }} />
 
-                        <p className={`text-sm text-center mt-2 mb-6
-                            ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                            We've sent a 6-digit code to
-                            <span className={`block font-medium mt-1
-                                ${theme === "dark" ? "text-white" : "text-gray-800"}`}>
+                {/* Content */}
+                <div className="relative z-10 w-full max-w-md animate-fade-up">
+                    {/* Glass Card */}
+                    <div className="glass-card rounded-3xl p-8 shadow-2xl">
+                        {/* Header */}
+                        <div className="text-center mb-8">
+                            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500/20 to-cyan-500/20 rounded-full mb-4">
+                                <HiShieldCheck className="text-4xl text-purple-500" />
+                            </div>
+                            <h1 className="text-3xl font-bold theme-text mb-2">
+                                Verify Code
+                            </h1>
+                            <p className="theme-text-muted text-sm">
+                                Enter the 6-digit code sent to
+                            </p>
+                            <p className="theme-text font-medium text-sm mt-1">
                                 {email}
-                            </span>
-                        </p>
+                            </p>
+                        </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
-
+                            {/* OTP Inputs */}
                             <div className="flex justify-center gap-3">
                                 {otpValues.map((value, i) => (
                                     <input
@@ -196,67 +153,58 @@ const ForgotPasswordOtp = ({ setStep, email }) => {
                                         type="text"
                                         maxLength={1}
                                         value={value}
-                                        onChange={(e) =>
-                                            handleChange(i, e.target.value)
-                                        }
-                                        className={`w-12 h-12 text-center text-lg font-semibold rounded-xl outline-none
-                                        ${theme === "dark"
-                                                ? "bg-black border border-gray-600 text-white focus:border-white"
-                                                : "bg-white border border-gray-300 text-black focus:border-gray-500"
-                                            }`}
+                                        onChange={(e) => handleChange(i, e.target.value)}
+                                        onKeyDown={(e) => handleKeyDown(i, e)}
+                                        className="w-12 h-14 sm:w-14 sm:h-16 text-center text-xl font-bold bg-white/50 dark:bg-white/5 border-2 theme-border rounded-xl theme-text focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 outline-none transition-all duration-300"
                                     />
                                 ))}
                             </div>
 
-                            <p className={`text-xs text-center
-                                ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
+                            {/* Timer / Resend */}
+                            <div className="text-center">
                                 {timer > 0 ? (
-                                    <>Send code again in 00:{String(timer).padStart(2, "0")}</>
+                                    <p className="theme-text-muted text-sm">
+                                        Resend code in <span className="font-semibold theme-text">00:{String(timer).padStart(2, "0")}</span>
+                                    </p>
                                 ) : (
                                     <button
                                         type="button"
                                         disabled={resendLoading}
                                         onClick={handleResendOtp}
-                                        className={`font-medium
-                                        ${theme === "dark" ? "text-white" : "text-gray-900"}
-                                        ${resendLoading ? "opacity-60" : ""}`}
+                                        className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent hover:from-purple-700 hover:to-cyan-700 transition-all disabled:opacity-60"
                                     >
                                         {resendLoading ? "Sending..." : "Resend Code"}
                                     </button>
                                 )}
-                            </p>
+                            </div>
 
+                            {/* Verify Button */}
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className={`w-full py-3 rounded-full border font-medium transition
-                                flex items-center justify-center gap-2
-                                ${theme === "dark"
-                                        ? "bg-black border-white text-white hover:bg-white hover:text-black"
-                                        : "bg-white border-gray-300 hover:shadow-md"
-                                    }
-                                ${isSubmitting ? "opacity-60 cursor-not-allowed" : ""}`}
+                                className="btn-primary w-full py-3.5 rounded-xl font-semibold text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
                             >
                                 {isSubmitting && (
-                                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                 )}
-                                {isSubmitting ? "Verifying..." : "Verify"}
+                                {isSubmitting ? "Verifying..." : "Verify Code"}
                             </button>
-
                         </form>
+
+                        {/* Help Text */}
+                        <p className="text-center theme-text-muted text-xs mt-6">
+                            Check your spam folder if you didn't receive the code
+                        </p>
                     </div>
                 </div>
             </div>
 
-            {/* 🔔 ALERT */}
             <AppAlert
                 open={alert.open}
                 message={alert.message}
                 severity={alert.severity}
                 title={alert.title}
-                onClose={() =>
-                    setAlert(prev => ({ ...prev, open: false }))
-                }
+                onClose={() => setAlert(prev => ({ ...prev, open: false }))}
             />
         </>
     );

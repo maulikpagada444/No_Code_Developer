@@ -1,47 +1,72 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { FiUser, FiLogOut, FiGrid, FiSun, FiMoon } from "react-icons/fi";
+import {
+    FiUser, FiLogOut, FiGrid, FiSun, FiMoon, FiSettings,
+    FiChevronDown, FiBell, FiFolder, FiHome
+} from "react-icons/fi";
+import { BsLightningChargeFill } from "react-icons/bs";
 import Cookies from "js-cookie";
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import AppAlert from "../common/AppAlert.jsx";
+import { gsap } from "gsap";
 
 const Header = () => {
     const navigate = useNavigate();
     const { theme, setThemeMode } = useContext(ThemeContext);
 
     const username = Cookies.get("username") || "User";
-    const [open, setOpen] = useState(false);
-    const dropdownRef = useRef(null);
-    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [logoutLoading, setLogoutLoading] = useState(false);
 
-    const [alert, setAlert] = useState({
-        open: false,
-        message: "",
-        severity: "success",
-        title: "",
-    });
+    const dropdownRef = useRef(null);
+    const headerRef = useRef(null);
+    const modalRef = useRef(null);
 
-    const showAlert = (message, severity = "success", title = "") => {
-        setAlert({ open: true, message, severity, title });
-    };
+    const [alert, setAlert] = useState({ open: false, message: "", severity: "success" });
 
-    /* Close dropdown on outside click */
+    // GSAP: Header entrance
     useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-                setOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        gsap.fromTo(headerRef.current,
+            { opacity: 0, y: -20 },
+            { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }
+        );
     }, []);
 
-    /* 🔴 LOGOUT HANDLER WITH LOADER */
+    // GSAP: Dropdown animation
+    useEffect(() => {
+        if (dropdownOpen && dropdownRef.current) {
+            gsap.fromTo(dropdownRef.current,
+                { opacity: 0, y: -10, scale: 0.95 },
+                { opacity: 1, y: 0, scale: 1, duration: 0.2, ease: "power2.out" }
+            );
+        }
+    }, [dropdownOpen]);
+
+    // GSAP: Modal animation
+    useEffect(() => {
+        if (showLogoutModal && modalRef.current) {
+            gsap.fromTo(modalRef.current,
+                { opacity: 0, scale: 0.9 },
+                { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.7)" }
+            );
+        }
+    }, [showLogoutModal]);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClick = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, []);
+
     const handleLogout = async () => {
         try {
             setLogoutLoading(true);
-
             const BASE_URL = import.meta.env.VITE_API_BASE_URL;
             const accessToken = Cookies.get("access_token");
             const refreshToken = Cookies.get("refresh_token");
@@ -55,12 +80,7 @@ const Header = () => {
                 },
             });
         } catch (error) {
-            console.error("Logout API error:", error);
-            showAlert(
-                "You were logged out locally",
-                "warning",
-                "Session Expired"
-            );
+            console.error("Logout error:", error);
         } finally {
             Cookies.remove("access_token");
             Cookies.remove("refresh_token");
@@ -68,181 +88,179 @@ const Header = () => {
             Cookies.remove("email");
             Cookies.remove("user_id");
             Cookies.remove("project_id");
-
             navigate("/signin", {
-                state: {
-                    alert: {
-                        message: "Logged out successfully",
-                        severity: "success",
-                    },
-                },
+                state: { alert: { message: "Logged out successfully", severity: "success" } },
             });
-
-            setLogoutLoading(false);
         }
     };
 
-    const toggleTheme = () => {
-        setThemeMode(theme === "dark" ? "light" : "dark");
-    };
+    const navItems = [
+        { name: "Dashboard", path: "/dashboard", icon: FiGrid, end: true },
+        { name: "Projects", path: "/dashboard/project", icon: FiFolder },
+        { name: "Settings", path: "/dashboard/setting", icon: FiSettings },
+    ];
 
     return (
         <>
-            {/* HEADER */}
-            <header
-                className={`w-full sticky top-0 z-50 backdrop-blur-xl border-b
-                ${theme === "dark"
-                        ? "bg-black/40 border-white/10 text-white"
-                        : "bg-white/80 border-gray-200 text-black"
-                    }`}
-            >
-                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="text-lg font-semibold">✏️ Logo</div>
-
-                    <nav className="flex gap-2 text-sm font-medium">
-                        {[
-                            { name: "Dashboard", path: "/dashboard", end: true },
-                            { name: "Project", path: "/dashboard/project" },
-                            { name: "Setting", path: "/dashboard/setting" },
-                        ].map((item) => (
-                            <NavLink
-                                key={item.name}
-                                to={item.path}
-                                end={item.end}
-                                className={({ isActive }) =>
-                                    `px-4 py-1.5 rounded-lg transition
-                                    ${isActive
-                                        ? theme === "dark"
-                                            ? "bg-white/15 text-white"
-                                            : "bg-gray-200 text-black"
-                                        : theme === "dark"
-                                            ? "text-gray-400 hover:text-white hover:bg-white/10"
-                                            : "text-gray-500 hover:text-black hover:bg-gray-100"
-                                    }`
-                                }
-                            >
-                                {item.name}
-                            </NavLink>
-                        ))}
-                    </nav>
-
-                    {/* USER MENU */}
-                    <div className="relative" ref={dropdownRef}>
-                        <button
-                            onClick={() => setOpen(!open)}
-                            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm border
-                            ${theme === "dark"
-                                    ? "bg-white/5 border-white/10 text-white"
-                                    : "bg-white border-gray-300 text-gray-700"
-                                }`}
+            <header ref={headerRef} className="sticky top-0 z-50 glass">
+                <div className="max-w-7xl mx-auto px-6 py-4">
+                    <div className="flex items-center justify-between">
+                        {/* Logo */}
+                        <div
+                            className="flex items-center gap-3 cursor-pointer group"
+                            onClick={() => navigate("/home")}
                         >
-                            {username} <FiUser />
-                        </button>
-
-                        {open && (
-                            <div
-                                className={`absolute right-0 mt-2 w-56 rounded-xl shadow-lg border
-                                ${theme === "dark"
-                                        ? "bg-[#111] border-white/10"
-                                        : "bg-white border-gray-200"
-                                    }`}
-                            >
-                                <button
-                                    onClick={() => {
-                                        navigate("/dashboard");
-                                        setOpen(false);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-white/10"
-                                >
-                                    <FiGrid /> Dashboard
-                                </button>
-
-                                <div className="flex items-center justify-between px-4 py-3">
-                                    <div className="flex items-center gap-2 text-sm">
-                                        {theme === "dark" ? <FiMoon /> : <FiSun />}
-                                        Dark Mode
-                                    </div>
-                                    <button
-                                        onClick={toggleTheme}
-                                        className={`w-11 h-6 rounded-full relative
-                                        ${theme === "dark" ? "bg-blue-600" : "bg-gray-300"}`}
-                                    >
-                                        <span
-                                            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition
-                                            ${theme === "dark" ? "translate-x-5" : ""}`}
-                                        />
-                                    </button>
-                                </div>
-
-                                <div className="h-px bg-gray-200 dark:bg-white/10" />
-
-                                <button
-                                    onClick={() => {
-                                        setShowLogoutConfirm(true);
-                                        setOpen(false);
-                                    }}
-                                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
-                                >
-                                    <FiLogOut /> Logout
-                                </button>
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <BsLightningChargeFill className="text-white text-lg" />
                             </div>
-                        )}
+                            <span className="text-xl font-bold text-white hidden sm:block">INAI</span>
+                        </div>
+
+                        {/* Navigation */}
+                        <nav className="hidden md:flex items-center gap-1 p-1 rounded-xl bg-white/5 border border-white/10">
+                            {navItems.map((item) => (
+                                <NavLink
+                                    key={item.name}
+                                    to={item.path}
+                                    end={item.end}
+                                    className={({ isActive }) =>
+                                        `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${isActive
+                                            ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white border border-purple-500/20'
+                                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                        }`
+                                    }
+                                >
+                                    <item.icon size={16} />
+                                    {item.name}
+                                </NavLink>
+                            ))}
+                        </nav>
+
+                        {/* Right Side */}
+                        <div className="flex items-center gap-3">
+                            {/* Theme Toggle */}
+                            <button
+                                onClick={() => setThemeMode(theme === 'dark' ? 'light' : 'dark')}
+                                className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                            >
+                                {theme === 'dark' ? <FiSun size={18} /> : <FiMoon size={18} />}
+                            </button>
+
+                            {/* Notifications */}
+                            <button className="relative w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all">
+                                <FiBell size={18} />
+                                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
+                            </button>
+
+                            {/* User Menu */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                                    className="flex items-center gap-3 pl-1 pr-3 py-1 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all"
+                                >
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-white text-sm font-semibold">
+                                        {username.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className="text-white text-sm font-medium hidden sm:block">{username}</span>
+                                    <FiChevronDown
+                                        className={`text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
+                                        size={16}
+                                    />
+                                </button>
+
+                                {dropdownOpen && (
+                                    <div
+                                        ref={dropdownRef}
+                                        className="absolute right-0 mt-2 w-64 rounded-2xl glass-card border border-white/10 overflow-hidden shadow-2xl"
+                                    >
+                                        {/* User Info */}
+                                        <div className="p-4 border-b border-white/10">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center text-white font-semibold text-lg">
+                                                    {username.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <p className="text-white font-semibold">{username}</p>
+                                                    <p className="text-gray-500 text-xs">Free Plan</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Menu Items */}
+                                        <div className="py-2">
+                                            <button
+                                                onClick={() => { navigate("/dashboard"); setDropdownOpen(false); }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                                            >
+                                                <FiGrid size={18} />
+                                                <span className="text-sm">Dashboard</span>
+                                            </button>
+                                            <button
+                                                onClick={() => { navigate("/dashboard/setting"); setDropdownOpen(false); }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                                            >
+                                                <FiSettings size={18} />
+                                                <span className="text-sm">Settings</span>
+                                            </button>
+                                        </div>
+
+                                        {/* Logout */}
+                                        <div className="p-2 border-t border-white/10">
+                                            <button
+                                                onClick={() => { setShowLogoutModal(true); setDropdownOpen(false); }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                                            >
+                                                <FiLogOut size={18} />
+                                                <span className="text-sm">Sign Out</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            {/* LOGOUT CONFIRM MODAL */}
-            {showLogoutConfirm && (
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div
-                        className={`w-[90%] max-w-sm rounded-2xl p-6
-                        ${theme === "dark"
-                                ? "bg-[#111] text-white border border-white/10"
-                                : "bg-white text-black border border-gray-200"
-                            }`}
-                    >
-                        <h3 className="text-lg font-semibold mb-2">
-                            Confirm Logout
-                        </h3>
-                        <p className="text-sm text-gray-500 mb-6">
-                            Are you sure you want to logout?
+            {/* Logout Modal */}
+            {showLogoutModal && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+                    <div ref={modalRef} className="w-full max-w-sm p-8 rounded-2xl glass-card border border-white/10 text-center">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-red-500 to-pink-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-red-500/30">
+                            <FiLogOut className="text-white text-2xl" />
+                        </div>
+
+                        <h3 className="text-xl font-bold text-white mb-2">Sign Out?</h3>
+                        <p className="text-gray-400 mb-8">
+                            Are you sure you want to sign out?
                         </p>
 
-                        <div className="flex justify-end gap-3">
+                        <div className="flex gap-3">
                             <button
-                                onClick={() => setShowLogoutConfirm(false)}
+                                onClick={() => setShowLogoutModal(false)}
                                 disabled={logoutLoading}
-                                className="px-4 py-2 rounded-lg border disabled:opacity-50"
+                                className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-white font-semibold hover:bg-white/10 transition-all"
                             >
                                 Cancel
                             </button>
-
                             <button
                                 onClick={handleLogout}
                                 disabled={logoutLoading}
-                                className={`px-4 py-2 rounded-lg bg-red-600 text-white
-                                flex items-center gap-2
-                                ${logoutLoading ? "opacity-60 cursor-not-allowed" : ""}`}
+                                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2"
                             >
-                                {logoutLoading && (
-                                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                )}
-                                {logoutLoading ? "Logging out..." : "Yes, Logout"}
+                                {logoutLoading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                                {logoutLoading ? "Signing out..." : "Sign Out"}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* 🔔 ALERT */}
             <AppAlert
                 open={alert.open}
                 message={alert.message}
                 severity={alert.severity}
-                title={alert.title}
-                onClose={() =>
-                    setAlert(prev => ({ ...prev, open: false }))
-                }
+                onClose={() => setAlert(prev => ({ ...prev, open: false }))}
             />
         </>
     );

@@ -1,119 +1,98 @@
-import React, { useContext, useMemo, useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "../Recommendation/Header.jsx";
-import { ThemeContext } from "../../ThemeProvider.jsx";
+import { FiGlobe, FiSearch, FiArrowRight, FiExternalLink } from "react-icons/fi";
+import { gsap } from "gsap";
 
 const ConnectDomain = () => {
-    const { theme } = useContext(ThemeContext);
-    const isDark = theme === "dark";
-
+    const navigate = useNavigate();
     const [domain, setDomain] = useState("");
+    const cardRef = useRef(null);
 
-    const helperText = useMemo(() => {
-        return "Boost your online presence and visibility with a custom domain.";
+    useEffect(() => {
+        gsap.fromTo(cardRef.current,
+            { opacity: 0, y: 30, scale: 0.98 },
+            { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: "power3.out" }
+        );
     }, []);
 
+    const handleConnect = () => {
+        if (!domain.trim()) return;
+        gsap.to(cardRef.current, { scale: 0.98, duration: 0.1, yoyo: true, repeat: 1 });
+    };
+
     return (
-        <div
-            className={`min-h-screen relative overflow-hidden ${isDark ? "bg-[#0a0a0a] text-white" : "bg-[#fafafa] text-black"}`}
-        >
-            <div
-                className={`absolute inset-0 pointer-events-none ${isDark
-                    ? "bg-[linear-gradient(rgba(255,255,255,0.032)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.032)_1px,transparent_1px)]"
-                    : "bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)]"} bg-size-[32px_32px]`}
-            />
+        <div className="fixed inset-0 flex flex-col theme-bg">
+            {/* Background Effects */}
+            <div className="absolute inset-0 bg-grid pointer-events-none opacity-30" />
+            <div className="absolute -top-60 -left-60 w-[500px] h-[500px] rounded-full bg-purple-500/20 blur-[100px] pointer-events-none" />
+            <div className="absolute -bottom-40 -right-40 w-[400px] h-[400px] rounded-full bg-blue-500/20 blur-[100px] pointer-events-none" />
 
-            {isDark && (
-                <div className="absolute inset-0 pointer-events-none z-1 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0)_0%,rgba(0,0,0,0.65)_50%,rgba(0,0,0,0.95)_100%)]" />
-            )}
-
-            {isDark && (
-                <div className="absolute inset-x-0 top-0 h-56 pointer-events-none z-1 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.12),rgba(255,255,255,0.06),transparent_65%)] blur-2xl" />
-            )}
-
+            {/* Header */}
             <Header />
 
-            <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
-                <div className="mx-auto w-full max-w-5xl">
-                    <h1 className="text-xl sm:text-2xl font-semibold">Connect a domain</h1>
-                    <div className={`mt-1 text-xs ${isDark ? "text-gray-300" : "text-gray-500"}`}>
-                        {helperText}
+            {/* Main Content - Centered */}
+            <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
+                <div
+                    ref={cardRef}
+                    className="w-full max-w-xl p-8 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl relative z-10"
+                >
+                    {/* Icon */}
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-purple-500/30">
+                        <FiGlobe className="text-white text-xl" />
                     </div>
 
-                    <div
-                        className={`mt-8 rounded-lg border ${isDark ? "border-white/15 bg-black/30" : "border-black bg-[#f6f6f6]"}`}
-                        style={{
-                            boxShadow: isDark
-                                ? "0 0 0 1px rgba(255,255,255,0.06), 0 30px 80px rgba(0,0,0,0.55)"
-                                : "0 0 0 1px rgba(0,0,0,0.06), 0 20px 48px rgba(0,0,0,0.06)",
-                            backdropFilter: "blur(10px)",
-                            WebkitBackdropFilter: "blur(10px)",
-                        }}
-                    >
-                        <div className="px-5 sm:px-7 py-6 sm:py-7 h-[50vh]">
-                            <div className="text-lg font-medium">
-                                What domain do you want to connect to Dheray?
-                            </div>
-                            <div className={`mt-1 text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-                                Enter the custom domain you want to connect (ex: mysite.com)
-                            </div>
+                    {/* Title */}
+                    <h1 className="text-2xl sm:text-3xl font-bold text-white text-center mb-2">
+                        Connect Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">Domain</span>
+                    </h1>
+                    <p className="text-gray-500 text-center mb-8 text-sm">
+                        Boost your online presence with a custom domain
+                    </p>
 
-                            <div
-                                className={`mt-4 h-px w-full ${isDark ? "bg-white/50" : "bg-black"}`}
-                                style={{
-                                    boxShadow: isDark ? undefined : "0 1px 0 rgba(0,0,0,0.18)",
-                                }}
+                    {/* Input */}
+                    <div className="max-w-md mx-auto">
+                        <div className="relative mb-4">
+                            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+                            <input
+                                value={domain}
+                                onChange={(e) => setDomain(e.target.value)}
+                                placeholder="e.g. myawesomesite.com"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-12 text-white placeholder:text-gray-600 outline-none focus:border-purple-500/50 transition-colors"
+                                onKeyDown={(e) => e.key === "Enter" && handleConnect()}
                             />
+                        </div>
 
-                            <div
-                                className="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-center gap-3 sm:gap-4"
+                        <button
+                            onClick={handleConnect}
+                            disabled={!domain.trim()}
+                            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-purple-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                            Connect Domain
+                            <FiArrowRight />
+                        </button>
+                    </div>
+
+                    {/* Info Cards */}
+                    <div className="grid grid-cols-2 gap-3 mt-8">
+                        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                            <h3 className="text-white font-medium text-sm mb-1">Already have a domain?</h3>
+                            <p className="text-gray-500 text-xs">Enter it above.</p>
+                        </div>
+                        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                            <h3 className="text-white font-medium text-sm mb-1">Need to buy one?</h3>
+                            <a
+                                href="https://www.hostinger.com"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-purple-400 text-xs font-medium hover:text-purple-300 mt-1"
                             >
-                                <div
-                                    className={`flex items-center rounded-full border overflow-hidden w-full sm:w-[420px] ${isDark
-                                        ? "border-white/15 bg-black/35"
-                                        : "border-black/30 bg-white"}`}
-                                    style={{
-                                        boxShadow: isDark
-                                            ? "0 0 0 1px rgba(255,255,255,0.04)"
-                                            : "0 0 0 1px rgba(0,0,0,0.10)",
-                                    }}
-                                >
-                                    <div className={`pl-4 pr-2 flex items-center ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                        </svg>
-                                    </div>
-                                    <input
-                                        value={domain}
-                                        onChange={(e) => setDomain(e.target.value)}
-                                        placeholder="e.g. mystunningwebsite.com"
-                                        className={`flex-1 h-9 sm:h-10 px-2 pr-4 outline-none text-sm bg-transparent ${isDark
-                                            ? "text-gray-100 placeholder-gray-600"
-                                            : "text-black placeholder-gray-400"}`}
-                                    />
-                                </div>
-
-                                <button
-                                    type="button"
-                                    className={`cursor-pointer h-9 sm:h-10 px-5 rounded-full text-sm font-medium transition-all self-start sm:self-auto ${isDark
-                                        ? "text-white hover:brightness-110 active:brightness-95"
-                                        : "border border-black/30 text-black hover:bg-white active:bg-zinc-50"}`}
-                                    style={{
-                                        backgroundColor: isDark ? "rgba(0,0,0,0.55)" : undefined,
-                                        backgroundImage: isDark
-                                            ? "linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02))"
-                                            : "linear-gradient(180deg, rgba(255,255,255,1), rgba(243,243,243,1))",
-                                        boxShadow: isDark
-                                            ? "inset 0 1px 0 rgba(255,255,255,0.10), 0 0 0 1px rgba(255,255,255,0.16), 0 10px 24px rgba(0,0,0,0.55)"
-                                            : "inset 0 1px 0 rgba(255,255,255,0.95), 0 0 0 1px rgba(0,0,0,0.10)",
-                                    }}
-                                >
-                                    Let&apos;s Go
-                                </button>
-                            </div>
+                                Visit Hostinger <FiExternalLink size={10} />
+                            </a>
                         </div>
                     </div>
                 </div>
-            </main>
+            </div>
         </div>
     );
 };

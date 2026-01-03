@@ -3,7 +3,7 @@ import { isAuthenticated } from "../Utils/Auth";
 
 const ProtectedRoute = ({ children }) => {
     if (!isAuthenticated()) {
-        return <Navigate to="/signin" replace />;
+        return <Navigate to="/home" replace />;
     }
     return children;
 };

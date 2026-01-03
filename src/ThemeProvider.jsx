@@ -4,11 +4,11 @@ import React, { createContext, useEffect, useState } from "react";
 export const ThemeContext = createContext();
 
 const getStoredTheme = () => {
-    if (typeof window === "undefined") return "light";
+    if (typeof window === "undefined") return "dark";
     try {
-        return localStorage.getItem("theme") || "light";
+        return localStorage.getItem("theme") || "dark";
     } catch (_) {
-        return "light";
+        return "dark";
     }
 };
 

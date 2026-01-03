@@ -158,7 +158,7 @@ export const EditorProvider = ({ children }) => {
     const [selectedElement, setSelectedElement] = useState(null);
 
     // Ye hamara Static HTML code hai (Manual Data)
-    const [htmlContent] = useState(`
+    const [htmlContent, setHtmlContent] = useState(`
         <div class="min-h-screen bg-[#050510] text-white flex flex-col items-center justify-center p-10 font-sans">
             <div class="flex items-center gap-2 mb-8 opacity-80">
                 <span class="text-xl font-bold tracking-wide">Galaxy</span>
@@ -177,7 +177,7 @@ export const EditorProvider = ({ children }) => {
     `);
 
     return (
-        <EditorContext.Provider value={{ selectedElement, setSelectedElement, htmlContent }}>
+        <EditorContext.Provider value={{ selectedElement, setSelectedElement, htmlContent, setHtmlContent }}>
             {children}
         </EditorContext.Provider>
     );
