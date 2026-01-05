@@ -145,21 +145,68 @@
 
 
 "use client";
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 
 const EditorContext = createContext();
+
+// Maximum history size for undo/redo (reduced for localStorage persistence)
+const MAX_HISTORY_SIZE = 20;
+
+// ============================================
+// HELPER: Clean HTML content before saving
+// Removes all interaction-related attributes that shouldn't be persisted
+// ============================================
+const cleanHtmlContent = (html) => {
+    if (!html) return html;
+
+    let cleaned = html;
+
+    // 1. Remove all data-attributes injected by the selector
+    cleaned = cleaned.replace(/\sdata-(hover|selected|jarvis|contenteditable|jarvis-initialized)[^=]*="[^"]*"/g, '');
+    cleaned = cleaned.replace(/\sdata-(hover|selected|jarvis|contenteditable|jarvis-initialized)[^=\s>]*(\s|>)/g, '$2');
+
+    // 2. Remove any injected style tags for selector
+    // Removes: <style id="jarvis-interaction-styles">...</style> and similar
+    cleaned = cleaned.replace(/<style[^>]*id="(jarvis-interaction-styles|jarvis-selector-styles)"[^>]*>[\s\S]*?<\/style>/gi, '');
+
+    // 3. Remove styles that contain our specific interaction CSS rules (backup check)
+    cleaned = cleaned.replace(/<style[^>]*>[\s\S]*?data-hover="true"[\s\S]*?<\/style>/gi, '');
+
+    // 4. Remove UI elements like the toolbar
+    cleaned = cleaned.replace(/<div[^>]*id="jarvis-toolbar"[^>]*>[\s\S]*?<\/div>/gi, '');
+
+    // 5. Final polish: remove any leftover empty attributes or weird spacing
+    cleaned = cleaned.replace(/\s{2,}/g, ' ');
+
+    return cleaned.trim();
+};
 
 export const useEditor = () => {
     return useContext(EditorContext);
 };
 
-export const EditorProvider = ({ children }) => {
-    // Ye variable store karega ki user ne kis par click kiya
+export const EditorProvider = ({ children, sessionId }) => {
+    // ============================================
+    // STORAGE KEY (Session Specific)
+    // ============================================
+    const storageKey = sessionId ? `editorHtmlContent_${sessionId}` : 'editorHtmlContent';
+
+    // ============================================
+    // ELEMENT SELECTION STATE
+    // ============================================
     const [selectedElement, setSelectedElement] = useState(null);
+    const [originalElement, setOriginalElement] = useState(null);
     const [elementUpdateTrigger, setElementUpdateTrigger] = useState(0);
 
-    // Ye hamara Static HTML code hai (Manual Data)
-    const [htmlContent, setHtmlContent] = useState(`
+    // Jarvis Selector state
+    const [selectorReady, setSelectorReady] = useState(false);
+    const [interactionMode, setInteractionMode] = useState(false);
+
+    // Store iframe reference for extracting HTML on save
+    const iframeRef = useRef(null);
+
+    // Default HTML content
+    const defaultHtmlContent = `
         <div class="min-h-screen bg-[#050510] text-white flex flex-col items-center justify-center p-10 font-sans">
             <div class="flex items-center gap-2 mb-8 opacity-80">
                 <span class="text-xl font-bold tracking-wide">Galaxy</span>
@@ -175,32 +222,316 @@ export const EditorProvider = ({ children }) => {
                 <button class="px-8 py-4 border border-white/20 rounded-full font-bold hover:bg-white/10 transition">View Demo</button>
             </div>
         </div>
-    `);
+    `;
 
-    // Update element properties and notify iframe
+    // ============================================
+    // HTML CONTENT STATE
+    // ============================================
+    const [htmlContent, setHtmlContentInternal] = useState(() => {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+            // Clean any saved content to remove old interaction attributes
+            const cleaned = cleanHtmlContent(saved);
+            // Update localStorage with cleaned version
+            localStorage.setItem(storageKey, cleaned);
+            return cleaned;
+        }
+        return defaultHtmlContent;
+    });
+
+    // ============================================
+    // UNDO/REDO HISTORY
+    // ============================================
+    const historyKey = sessionId ? `editorHistory_${sessionId}` : 'editorHistory';
+    const futureKey = sessionId ? `editorFuture_${sessionId}` : 'editorFuture';
+
+    const [history, setHistory] = useState(() => {
+        try {
+            const saved = localStorage.getItem(historyKey);
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            console.error('Failed to load history:', e);
+            return [];
+        }
+    });
+
+    const [future, setFuture] = useState(() => {
+        try {
+            const saved = localStorage.getItem(futureKey);
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            console.error('Failed to load future:', e);
+            return [];
+        }
+    });
+
+    const [isUndoRedo, setIsUndoRedo] = useState(false); // Flag to prevent history push during undo/redo
+
+    // Sync history to localStorage
+    useEffect(() => {
+        if (!isUndoRedo) {
+            localStorage.setItem(historyKey, JSON.stringify(history));
+        }
+    }, [history, historyKey, isUndoRedo]);
+
+    // Sync future to localStorage
+    useEffect(() => {
+        if (!isUndoRedo) {
+            localStorage.setItem(futureKey, JSON.stringify(future));
+        }
+    }, [future, futureKey, isUndoRedo]);
+
+    // Push to history
+    const pushToHistory = useCallback((content) => {
+        if (!content || isUndoRedo) return;
+
+        setHistory(prev => {
+            const newHistory = [...prev, content].slice(-MAX_HISTORY_SIZE);
+            return newHistory;
+        });
+        setFuture([]); // Clear future on new action
+    }, [isUndoRedo]);
+
+    // Set HTML content with history tracking
+    // ALWAYS cleans HTML to remove interaction attributes
+    const setHtmlContent = useCallback((html) => {
+        if (!html) return;
+
+        // IMPORTANT: Always clean HTML before saving to remove interaction artifacts
+        const cleanedHtml = cleanHtmlContent(html);
+
+        // Push current content to history before changing
+        if (htmlContent && cleanedHtml !== htmlContent && !isUndoRedo) {
+            pushToHistory(htmlContent);
+        }
+
+        setHtmlContentInternal(cleanedHtml);
+        localStorage.setItem(storageKey, cleanedHtml);
+
+        console.log(`🧹 HTML cleaned and saved to ${storageKey}`);
+    }, [htmlContent, pushToHistory, isUndoRedo, storageKey]);
+
+    // Undo action
+    const undo = useCallback(() => {
+        if (history.length === 0) {
+            console.log('⚠️ No more undo history');
+            return false;
+        }
+
+        setIsUndoRedo(true);
+
+        const previousContent = history[history.length - 1];
+        const newHistory = history.slice(0, -1);
+
+        setHistory(newHistory);
+        setFuture(prev => [htmlContent, ...prev]);
+        setHtmlContentInternal(previousContent);
+        localStorage.setItem(storageKey, previousContent);
+
+        // Update storage immediately for undo/redo to be safe
+        localStorage.setItem(historyKey, JSON.stringify(newHistory));
+        localStorage.setItem(futureKey, JSON.stringify([htmlContent, ...future]));
+
+        console.log('↩️ Undo performed');
+
+        setTimeout(() => setIsUndoRedo(false), 100);
+        return true;
+    }, [history, htmlContent, storageKey]);
+
+    // Redo action
+    const redo = useCallback(() => {
+        if (future.length === 0) {
+            console.log('⚠️ No more redo history');
+            return false;
+        }
+
+        setIsUndoRedo(true);
+
+        const nextContent = future[0];
+        const newFuture = future.slice(1);
+
+        setHistory(prev => [...prev, htmlContent]);
+        setFuture(newFuture);
+        setHtmlContentInternal(nextContent);
+        localStorage.setItem(storageKey, nextContent);
+
+        // Update storage immediately
+        localStorage.setItem(historyKey, JSON.stringify([...history, htmlContent]));
+        localStorage.setItem(futureKey, JSON.stringify(newFuture));
+
+        console.log('↪️ Redo performed');
+
+        setTimeout(() => setIsUndoRedo(false), 100);
+        return true;
+    }, [future, htmlContent, storageKey]);
+
+    // Check capabilities
+    const canUndo = history.length > 0;
+    const canRedo = future.length > 0;
+
+    // ============================================
+    // KEYBOARD SHORTCUTS (Ctrl+Z, Ctrl+Y)
+    // ============================================
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            // Ignore if typing in input/textarea
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            // Ctrl/Cmd + Z = Undo
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            }
+
+            // Ctrl/Cmd + Shift + Z = Redo
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey) {
+                e.preventDefault();
+                redo();
+            }
+
+            // Ctrl/Cmd + Y = Redo (alternative)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+                e.preventDefault();
+                redo();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [undo, redo]);
+
+    // ============================================
+    // ELEMENT OPERATIONS
+    // ============================================
+
+    // Update element properties (temporary changes)
     const updateElementProperty = (field, value) => {
         if (!selectedElement) return;
 
-        // Update the selected element state
         const updatedElement = {
             ...selectedElement,
             [field]: value
         };
 
         setSelectedElement(updatedElement);
-
-        // Trigger update to iframe
         setElementUpdateTrigger(prev => prev + 1);
     };
 
+    // Save changes - commits the temporary changes
+    const saveChanges = useCallback(() => {
+        if (!selectedElement) return;
+
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+            try {
+                const iframeDoc = iframeRef.current.contentWindow.document;
+                const bodyContent = iframeDoc.body.innerHTML;
+
+                // IMPORTANT: Clean HTML before saving to remove interaction attributes
+                const cleanedContent = cleanHtmlContent(bodyContent);
+
+                // This will trigger history push
+                setHtmlContent(cleanedContent);
+
+                // Set original to current (commit changes)
+                setOriginalElement(selectedElement);
+
+                console.log('✅ Changes saved with cleaned HTML!');
+                return true;
+            } catch (error) {
+                console.error('Error saving changes:', error);
+                return false;
+            }
+        }
+        return false;
+    }, [selectedElement, setHtmlContent]);
+
+    // Cancel changes - revert to original state
+    const cancelChanges = useCallback(() => {
+        if (!originalElement) {
+            setSelectedElement(null);
+            return;
+        }
+
+        setSelectedElement(originalElement);
+        setElementUpdateTrigger(prev => prev + 1);
+        setSelectedElement(null);
+        setOriginalElement(null);
+    }, [originalElement]);
+
+    // Custom setSelectedElement wrapper to also store original
+    const selectElement = useCallback((element) => {
+        if (element) {
+            setOriginalElement(element);
+        }
+        setSelectedElement(element);
+    }, []);
+
+    // Reset content to default
+    const resetContent = useCallback(() => {
+        // Save current state for undo
+        if (htmlContent) {
+            pushToHistory(htmlContent);
+        }
+
+        localStorage.removeItem(storageKey);
+        setHtmlContentInternal(defaultHtmlContent);
+        setSelectedElement(null);
+        setOriginalElement(null);
+
+        // Future should be cleared because we're starting a "new" path from default
+        setFuture([]);
+        localStorage.removeItem(futureKey);
+
+        console.log('🔄 Content reset to default');
+    }, [htmlContent, pushToHistory, storageKey, defaultHtmlContent, futureKey]);
+
+    // Clear all history
+    const clearHistory = useCallback(() => {
+        setHistory([]);
+        setFuture([]);
+        localStorage.removeItem(historyKey);
+        localStorage.removeItem(futureKey);
+        console.log('🗑️ History cleared');
+    }, [historyKey, futureKey]);
+
+    // ============================================
+    // CONTEXT PROVIDER VALUE
+    // ============================================
     return (
         <EditorContext.Provider value={{
+            // Element Selection
             selectedElement,
-            setSelectedElement,
+            setSelectedElement: selectElement,
+            originalElement,
+            updateElementProperty,
+            elementUpdateTrigger,
+
+            // HTML Content
             htmlContent,
             setHtmlContent,
-            updateElementProperty,
-            elementUpdateTrigger
+
+            // Undo/Redo
+            undo,
+            redo,
+            canUndo,
+            canRedo,
+            clearHistory,
+            historyLength: history.length,
+            futureLength: future.length,
+
+            // Save/Cancel
+            saveChanges,
+            cancelChanges,
+            resetContent,
+
+            // Jarvis Selector
+            selectorReady,
+            setSelectorReady,
+            interactionMode,
+            setInteractionMode,
+
+            // Iframe Reference
+            iframeRef
         }}>
             {children}
         </EditorContext.Provider>

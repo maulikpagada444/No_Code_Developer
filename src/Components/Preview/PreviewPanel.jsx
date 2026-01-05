@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useContext, useEffect, useRef, useCallback } from "react";
+import { useState, useContext, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Cookies from "js-cookie";
 
@@ -16,21 +16,76 @@ import PropertiesPanel from "../Editor/PropertiesPanel";
 import { ElementContextMenu } from "../Editor/ElementContextMenu";
 
 /* ---------------- IFRAME INTERACTION SCRIPT ---------------- */
+// Base script to prevent navigation - ALWAYS injected
+const baseScript = `
+<script>
+  // Prevent external link navigation but allow hash links for smooth scrolling
+  document.addEventListener('click', function(e) {
+    const target = e.target.closest('a');
+    if (target && target.tagName === 'A') {
+      const href = target.getAttribute('href');
+      
+      // Allow hash links (e.g., #gallery, #home) for section navigation
+      if (href && href.startsWith('#')) {
+        // Let the browser handle hash navigation naturally
+        const targetElement = document.querySelector(href);
+        if (targetElement) {
+          e.preventDefault();
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        return;
+      }
+      
+      // Prevent all other navigation (external links, different pages, etc.)
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  }, true);
+</script>
+`;
+
+// Interaction script for edit mode - only when interact mode is enabled
 const interactionScript = `
 <script>
-  const style = document.createElement('style');
-  style.textContent = \`
-    [data-hover="true"] { outline: 2px dashed #3B82F6 !important; cursor: pointer; }
-    [data-selected="true"] { outline: 2px solid #3B82F6 !important; }
-  \`;
-  document.head.appendChild(style);
-
-  // Keep track of currently selected element
+  let selectionEnabled = true;
+  const STYLE_ID = 'jarvis-interaction-styles';
   let currentSelectedElement = null;
+  
+  function updateStyles() {
+    let style = document.getElementById(STYLE_ID);
+    if (!style) {
+      style = document.createElement('style');
+      style.id = STYLE_ID;
+      document.head.appendChild(style);
+    }
+    style.textContent = selectionEnabled ? \`
+      [data-hover="true"] { outline: 2px dashed #00F2FF !important; cursor: pointer !important; outline-offset: -2px; }
+      [data-selected="true"] { outline: 3px solid #7000FF !important; outline-offset: -3px; }
+    \` : '';
+  }
+
+  updateStyles();
+
+  window.addEventListener('message', e => {
+    if (e.data.type === 'SET_SELECTION_MODE') {
+      selectionEnabled = !!e.data.payload?.enabled;
+      updateStyles();
+      if (!selectionEnabled) {
+        document.querySelectorAll('[data-hover], [data-selected]').forEach(el => {
+          el.removeAttribute('data-hover');
+          el.removeAttribute('data-selected');
+        });
+      }
+    }
+    // ... rest of message handling ...
+  });
 
   document.body.addEventListener('mouseover', e => {
+    if (!selectionEnabled) return;
     e.target.setAttribute('data-hover', 'true');
   });
+
 
   document.body.addEventListener('mouseout', e => {
     e.target.removeAttribute('data-hover');
@@ -59,6 +114,7 @@ const interactionScript = `
       payload: {
         tagName: e.target.tagName.toLowerCase(),
         text: e.target.innerText,
+        src: e.target.tagName.toLowerCase() === 'img' ? e.target.src : null,
         classes: e.target.className,
         id: e.target.id,
         mouseX: mouseX,
@@ -90,6 +146,8 @@ const interactionScript = `
         currentSelectedElement.innerText = value;
       } else if (field === 'classes') {
         currentSelectedElement.className = value;
+      } else if (field === 'src' && currentSelectedElement.tagName.toLowerCase() === 'img') {
+        currentSelectedElement.src = value;
       }
     }
   });
@@ -107,10 +165,17 @@ function PreviewContent() {
         html: htmlFromRoute,
     } = locationState;
     const { theme } = useContext(ThemeContext);
-    const { htmlContent, setHtmlContent, selectedElement, setSelectedElement, elementUpdateTrigger } =
-        useEditor();
+    const {
+        htmlContent,
+        setHtmlContent,
+        selectedElement,
+        setSelectedElement,
+        elementUpdateTrigger,
+        iframeRef,
+        interactionMode,
+        setInteractionMode
+    } = useEditor();
 
-    const iframeRef = useRef(null);
     const hasAutoFetchedRef = useRef(false);
     const BASE_URL = import.meta.env.VITE_API_BASE_URL;
     const isDark = theme === "dark";
@@ -124,7 +189,6 @@ function PreviewContent() {
     const [showPublishModal, setShowPublishModal] = useState(false);
     const [showSubDomainModal, setShowSubDomainModal] = useState(false);
     const [isChatOpen, setIsChatOpen] = useState(false);  // Chat visibility state
-    const [isInteractMode, setIsInteractMode] = useState(false);  // 👈 Interact mode toggle
     const [selectedElementName, setSelectedElementName] = useState("");  // 👈 For chatbot display
 
     // Context menu state
@@ -135,7 +199,7 @@ function PreviewContent() {
     /* ---------------- SEND ELEMENT UPDATES TO IFRAME ---------------- */
     useEffect(() => {
         if (elementUpdateTrigger > 0 && selectedElement && iframeRef.current?.contentWindow) {
-            // Send update message to iframe for both text and class changes
+            // Send update message to iframe for text, class, and src changes
             iframeRef.current.contentWindow.postMessage(
                 {
                     type: 'UPDATE_ELEMENT',
@@ -157,6 +221,19 @@ function PreviewContent() {
                 },
                 '*'
             );
+
+            if (selectedElement.tagName === 'img' || selectedElement.src) {
+                iframeRef.current.contentWindow.postMessage(
+                    {
+                        type: 'UPDATE_ELEMENT',
+                        payload: {
+                            field: 'src',
+                            value: selectedElement.src || ''
+                        }
+                    },
+                    '*'
+                );
+            }
         }
     }, [elementUpdateTrigger, selectedElement]);
 
@@ -190,40 +267,100 @@ function PreviewContent() {
 
     useEffect(() => {
         if (location.state?.html) {
-            setHtmlContent(location.state.html);
+            // Only accept location state HTML if there's no saved content in localStorage
+            const savedContent = localStorage.getItem('editorHtmlContent');
+            if (!savedContent) {
+                setHtmlContent(location.state.html);
+            }
+            // If localStorage has content, keep using it (user's edits)
         }
     }, [location.state, setHtmlContent]);
-
 
 
     /* ---------------- HANDLE IFRAME MESSAGE ---------------- */
     useEffect(() => {
         const handleMessage = (event) => {
-            if (event.data?.type === "ELEMENT_CLICKED") {
-                const payload = event.data.payload;
+            const { type, data, payload } = event.data || {};
 
-                if (isInteractMode) {
-                    // In Interact mode: Show context menu with options
-                    const elementName = payload.id || payload.className?.split(' ')[0] || payload.tagName || 'Element';
+            // ONLY process element selection when Interact mode is ON
+            if (!interactionMode) {
+                // In non-interact mode, ignore all selection messages
+                return;
+            }
 
-                    // Get mouse position from the event or use a default position
-                    const mouseX = payload.mouseX || window.innerWidth / 2;
-                    const mouseY = payload.mouseY || window.innerHeight / 2;
+            // Handle legacy ELEMENT_CLICKED format
+            if (type === "ELEMENT_CLICKED") {
+                const elementData = payload;
+                const elementName = elementData.id || elementData.className?.split(' ')[0] || elementData.tagName || 'Element';
+                const mouseX = elementData.mouseX || window.innerWidth / 2;
+                const mouseY = elementData.mouseY || window.innerHeight / 2;
 
-                    setContextMenuElement({ ...payload, elementName });
-                    setContextMenuPosition({ x: mouseX, y: mouseY });
-                    setShowContextMenu(true);
-                } else {
-                    // Normal mode: Open Properties Panel
-                    setSelectedElement(payload);
-                    if (mode !== "edit") setMode("edit");
-                }
+                // Show context menu with options
+                setContextMenuElement({ ...elementData, elementName });
+                setContextMenuPosition({ x: mouseX, y: mouseY });
+                setShowContextMenu(true);
+            }
+
+            // Handle new JARVIS_* message types
+            if (type === "JARVIS_SELECTOR_READY") {
+                console.log('🤖 Jarvis Selector Ready', data);
+            }
+
+            if (type === "JARVIS_ELEMENT_SELECTED") {
+                const elementData = data;
+                const elementName = elementData.id || elementData.className?.split(' ')[0] || elementData.tagName || 'Element';
+                const mouseX = elementData.mouseX || window.innerWidth / 2;
+                const mouseY = elementData.mouseY || window.innerHeight / 2;
+
+                // Show context menu with options
+                setContextMenuElement({ ...elementData, elementName });
+                setContextMenuPosition({ x: mouseX, y: mouseY });
+                setShowContextMenu(true);
+            }
+
+            if (type === "JARVIS_TEXT_CHANGED") {
+                console.log('📝 Text Changed:', data);
+            }
+
+            if (type === "JARVIS_REGENERATE_ELEMENT") {
+                console.log('🔄 Regenerate Request:', data);
+                const elementName = data.id || data.className?.split(' ')[0] || data.tagName || 'Element';
+                setSelectedElementName(elementName);
+                setIsChatOpen(true);
+                setInputValue(`Regenerate the ${data.tagName} element: `);
+            }
+
+            if (type === "JARVIS_CUSTOM_EDIT_ELEMENT") {
+                console.log('✏️ Custom Edit Request:', data);
+                const elementName = data.id || data.className?.split(' ')[0] || data.tagName || 'Element';
+                setSelectedElementName(elementName);
+                setIsChatOpen(true);
+                setInputValue(`[${elementName}] `);
+            }
+
+            if (type === "JARVIS_PROPS_ELEMENT") {
+                console.log('⚙️ Props Panel Request:', data);
+                setSelectedElement({
+                    tagName: data.tagName,
+                    text: data.text,
+                    src: data.src,
+                    classes: data.className,
+                    id: data.id,
+                    styles: data.styles,
+                    path: data.path
+                });
+            }
+
+            if (type === "JARVIS_ELEMENT_DESELECTED") {
+                setSelectedElement(null);
             }
         };
 
         window.addEventListener("message", handleMessage);
         return () => window.removeEventListener("message", handleMessage);
-    }, [mode, isInteractMode, setSelectedElement]);
+    }, [mode, interactionMode, setSelectedElement]);
+
+
 
     /* ---------------- DESELECT HANDLING ---------------- */
     useEffect(() => {
@@ -235,45 +372,56 @@ function PreviewContent() {
         }
     }, [selectedElement]);
 
+    /* ---------------- CLOSE PANEL WHEN SWITCHING TO PREVIEW OR DISABLING INTERACT ---------------- */
+    useEffect(() => {
+        // If switching to preview mode, force interaction mode OFF
+        if (mode === "preview" && interactionMode) {
+            setInteractionMode(false);
+        }
+
+        if ((mode === "preview" || !interactionMode) && selectedElement) {
+            setSelectedElement(null);
+            if (iframeRef.current?.contentWindow) {
+                iframeRef.current.contentWindow.postMessage({ type: "DESELECT" }, "*");
+            }
+        }
+    }, [mode, interactionMode, selectedElement, setSelectedElement, setInteractionMode]);
+
     /* ---------------- IFRAME SOURCE ---------------- */
     // Helper to check if string is a full HTML document
     const isFullHtml = htmlContent?.trim().toLowerCase().startsWith('<!doctype') ||
         htmlContent?.trim().toLowerCase().startsWith('<html');
 
-    const fullSource = isFullHtml ? `
+    // DEBUG: Log interact mode state
+    const shouldInjectScript = interactionMode && mode === "edit";
+    console.log(`🔧 Mode: ${mode} | Interact: ${interactionMode} | Script: ${shouldInjectScript ? 'INJECTED' : 'CLEAN'}`);
+
+    const fullSource = useMemo(() => {
+        if (isFullHtml) {
+            return `
 ${htmlContent}
-${isInteractMode ? interactionScript : ""}
-` : `
+${baseScript}
+${shouldInjectScript ? interactionScript : ""}
+`;
+        }
+        return `
 <!DOCTYPE html>
 <html>
 <head>
-  <script>
-    // Suppress Tailwind CDN warning in development
-    (function() {
-      var origWarn = console.warn;
-      console.warn = function() {
-        if (arguments[0] && arguments[0].includes && arguments[0].includes('cdn.tailwindcss.com')) return;
-        origWarn.apply(console, arguments);
-      };
-    })();
-  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body {
-      margin: 0;
-      overflow-x: hidden;
-      background: #050510;
-      font-family: sans-serif;
-    }
+    body { margin: 0; overflow-x: hidden; background: #050510; font-family: sans-serif; }
     ::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body>
   ${htmlContent || ""}
-  ${isInteractMode ? interactionScript : ""}
+  ${baseScript}
+  ${shouldInjectScript ? interactionScript : ""}
 </body>
 </html>
 `;
+    }, [htmlContent, isFullHtml, shouldInjectScript]);
 
     /* ---------------- GENERATE WEBSITE ---------------- */
     const generateWebsite = useCallback(async () => {
@@ -311,9 +459,15 @@ ${isInteractMode ? interactionScript : ""}
     /* ---------------- ACCEPT ROUTE HTML ---------------- */
     useEffect(() => {
         if (htmlFromRoute) {
-            setHtmlContent(htmlFromRoute);
+            // Only accept route HTML if there's no saved content in localStorage for THIS session
+            const storageKey = sessionIdFromRoute ? `editorHtmlContent_${sessionIdFromRoute}` : 'editorHtmlContent';
+            const savedContent = localStorage.getItem(storageKey);
+            if (!savedContent) {
+                setHtmlContent(htmlFromRoute);
+            }
+            // If localStorage has content, keep using it (user's edits)
         }
-    }, [htmlFromRoute, setHtmlContent]);
+    }, [htmlFromRoute, setHtmlContent, sessionIdFromRoute]);
 
     /* ---------------- AUTO FETCH WHEN NEEDED ---------------- */
     useEffect(() => {
@@ -348,7 +502,7 @@ ${isInteractMode ? interactionScript : ""}
             <div className="flex-1 flex overflow-hidden relative z-10">
                 <main className="flex-1 flex">
                     <div
-                        className="overflow-hidden transition-all"
+                        className="transition-all duration-300 bg-white shadow-2xl overflow-hidden relative"
                         style={{
                             width:
                                 viewMode === "mobile"
@@ -361,6 +515,7 @@ ${isInteractMode ? interactionScript : ""}
                         }}
                     >
                         <iframe
+                            key={`preview-${interactionMode ? 'int' : 'view'}-${mode}-${htmlContent?.length}`}
                             ref={iframeRef}
                             className="w-full h-full border-0"
                             srcDoc={fullSource}
@@ -370,7 +525,7 @@ ${isInteractMode ? interactionScript : ""}
                     </div>
                 </main>
 
-                {selectedElement && mode === "edit" && <PropertiesPanel />}
+                {selectedElement && mode === "edit" && interactionMode && <PropertiesPanel />}
             </div>
 
             {mode === "edit" && (
@@ -405,9 +560,13 @@ ${isInteractMode ? interactionScript : ""}
                     <BottomToolbar
                         viewMode={viewMode}
                         onViewChange={setViewMode}
-                        onPublishClick={() => setShowPublishModal(true)}
-                        isInteractMode={isInteractMode}
-                        onInteractToggle={() => setIsInteractMode(prev => !prev)}
+                        isInteractMode={interactionMode}
+                        onInteractToggle={() => setInteractionMode(prev => !prev)}
+                        isChatOpen={isChatOpen}
+                        onChatToggle={() => setIsChatOpen(prev => !prev)}
+                        onPublish={() => setShowPublishModal(true)}
+                        mode={mode}
+                        onModeChange={setMode}
                     />
 
                     {/* Context Menu for Interact Mode */}
@@ -467,8 +626,11 @@ ${isInteractMode ? interactionScript : ""}
 
 /* ---------------- WRAPPER ---------------- */
 export default function PreviewPanelWrapper() {
+    const location = useLocation();
+    const sessionId = location.state?.session_id || 'default';
+
     return (
-        <EditorProvider>
+        <EditorProvider key={sessionId} sessionId={sessionId}>
             <PreviewContent />
         </EditorProvider>
     );

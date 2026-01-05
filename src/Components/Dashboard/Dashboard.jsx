@@ -89,6 +89,7 @@ const Dashboard = () => {
 
     const [openNewProject, setOpenNewProject] = useState(false);
     const [recentProjects, setRecentProjects] = useState([]);
+    const [totalProjects, setTotalProjects] = useState(0);
     const [loadingProjects, setLoadingProjects] = useState(true);
 
     // Stats state
@@ -348,7 +349,9 @@ const Dashboard = () => {
                 });
                 const data = await res.json();
                 const projects = data?.data?.projects || data?.projects || data?.data || [];
-                setRecentProjects(Array.isArray(projects) ? projects.slice(0, 5) : []);
+                const projectsArray = Array.isArray(projects) ? projects : [];
+                setTotalProjects(projectsArray.length);
+                setRecentProjects(projectsArray.slice(0, 5));
             } catch (err) {
                 setRecentProjects([]);
             } finally {
@@ -433,7 +436,7 @@ const Dashboard = () => {
                             <StatCard
                                 icon={FiFolder}
                                 label="Total Projects"
-                                value={recentProjects.length || "0"}
+                                value={totalProjects || "0"}
                                 color="from-purple-500 to-violet-500"
                             />
                         </div>
