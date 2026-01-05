@@ -63,9 +63,6 @@ const FeaturesSelection = ({
         .map((opt, i) => normalizeOption(opt, i))
         .filter(Boolean);
 
-    console.log("Features Options (raw):", options);
-    console.log("Features Options (normalized):", normalizedOptions);
-
     useEffect(() => {
         const validButtons = buttonsRef.current.filter(Boolean);
         if (validButtons.length > 0) {

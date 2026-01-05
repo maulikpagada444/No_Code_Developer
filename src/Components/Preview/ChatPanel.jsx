@@ -97,13 +97,25 @@ export function ChatPanel({
         setIsLoading(true);
 
         try {
+            // Build the request body with optional element context
+            const requestBody = {
+                session_id: sessionId,
+                message
+            };
+
+            // If an element is selected, add it to the context
+            if (selectedElementName) {
+                requestBody.selected_element = selectedElementName;
+                requestBody.message = `[Editing element: ${selectedElementName}] ${message}`;
+            }
+
             const response = await fetch(`${BASE_URL}/project/chat-message`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ session_id: sessionId, message }),
+                body: JSON.stringify(requestBody),
             });
 
             const data = await response.json();
@@ -113,7 +125,9 @@ export function ChatPanel({
                 setChatHistory(prev => [...prev, { type: 'ai', message: aiMessage }]);
                 setLastActivityTime(Date.now());
 
-                if (data.blueprint_updated) {
+                // Always trigger code update if we got a response
+                // This will cause the preview to regenerate
+                if (data.blueprint_updated || data.response) {
                     onCodeUpdate?.(data);
                 }
                 onSubmit?.(data);
@@ -152,8 +166,8 @@ export function ChatPanel({
                                     </div>
                                 )}
                                 <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm ${chat.type === 'user'
-                                        ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-br-md'
-                                        : 'bg-white/10 text-white rounded-bl-md'
+                                    ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-br-md'
+                                    : 'bg-white/10 text-white rounded-bl-md'
                                     }`}>
                                     {chat.message}
                                 </div>
@@ -219,8 +233,8 @@ export function ChatPanel({
                     onClick={handleSendMessage}
                     disabled={loading || !inputValue.trim()}
                     className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all ${inputValue.trim()
-                            ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:shadow-lg hover:shadow-purple-500/30'
-                            : 'bg-white/5 text-gray-500'
+                        ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:shadow-lg hover:shadow-purple-500/30'
+                        : 'bg-white/5 text-gray-500'
                         }`}
                 >
                     {loading ? (

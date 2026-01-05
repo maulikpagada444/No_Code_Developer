@@ -112,7 +112,6 @@ const ColorSelection = ({
             });
 
             const data = await res.json();
-            console.log("Color Palettes API Response:", data);
 
             if (!res.ok) {
                 throw new Error(data?.message || "Failed to fetch palettes");
@@ -128,13 +127,11 @@ const ColorSelection = ({
                 }
             }
 
-            console.log("Raw palettes:", rawPalettes);
 
             const normalized = rawPalettes
                 .map(normalizePalette)
                 .filter(p => p && p.length >= 3);
 
-            console.log("Normalized palettes:", normalized);
 
             if (normalized.length > 0) {
                 setPaletteOptions(normalized);

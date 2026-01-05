@@ -213,7 +213,6 @@ const ProjectWorkspace = () => {
             });
 
             const data = await res.json();
-            console.log("Features API Response:", data);
 
             if (!res.ok || data.status === false) {
                 throw new Error(data?.message || "Failed to fetch features");
@@ -233,7 +232,6 @@ const ProjectWorkspace = () => {
                 rawFeatures = Object.values(rawFeatures);
             }
 
-            console.log("Raw Features:", rawFeatures);
 
             // Normalize features
             const options = rawFeatures.map((f, i) => {
@@ -252,7 +250,6 @@ const ProjectWorkspace = () => {
                 return null;
             }).filter(Boolean);
 
-            console.log("Normalized Features:", options);
 
             setFeaturesOptions(options.length ? options : MODULES_OPTIONS);
         } catch (err) {

@@ -13,6 +13,7 @@ import Header from "./Header";
 import { ThemeContext } from "../../ThemeProvider";
 import { EditorProvider, useEditor } from "../Editor/EditorContext";
 import PropertiesPanel from "../Editor/PropertiesPanel";
+import { ElementContextMenu } from "../Editor/ElementContextMenu";
 
 /* ---------------- IFRAME INTERACTION SCRIPT ---------------- */
 const interactionScript = `
@@ -23,6 +24,9 @@ const interactionScript = `
     [data-selected="true"] { outline: 2px solid #3B82F6 !important; }
   \`;
   document.head.appendChild(style);
+
+  // Keep track of currently selected element
+  let currentSelectedElement = null;
 
   document.body.addEventListener('mouseover', e => {
     e.target.setAttribute('data-hover', 'true');
@@ -41,8 +45,14 @@ const interactionScript = `
       .forEach(el => el.removeAttribute('data-selected'));
 
     e.target.setAttribute('data-selected', 'true');
+    currentSelectedElement = e.target;
 
     const computed = window.getComputedStyle(e.target);
+    
+    // Calculate position relative to parent window
+    const rect = e.target.getBoundingClientRect();
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
 
     window.parent.postMessage({
       type: 'ELEMENT_CLICKED',
@@ -50,6 +60,9 @@ const interactionScript = `
         tagName: e.target.tagName.toLowerCase(),
         text: e.target.innerText,
         classes: e.target.className,
+        id: e.target.id,
+        mouseX: mouseX,
+        mouseY: mouseY,
         styles: {
           width: computed.width,
           height: computed.height,
@@ -66,6 +79,18 @@ const interactionScript = `
       document
         .querySelectorAll('[data-selected]')
         .forEach(el => el.removeAttribute('data-selected'));
+      currentSelectedElement = null;
+    }
+    
+    // Handle element updates from Properties Panel
+    if (e.data.type === 'UPDATE_ELEMENT' && currentSelectedElement) {
+      const { field, value } = e.data.payload;
+      
+      if (field === 'text') {
+        currentSelectedElement.innerText = value;
+      } else if (field === 'classes') {
+        currentSelectedElement.className = value;
+      }
     }
   });
 </script>
@@ -82,7 +107,7 @@ function PreviewContent() {
         html: htmlFromRoute,
     } = locationState;
     const { theme } = useContext(ThemeContext);
-    const { htmlContent, setHtmlContent, selectedElement, setSelectedElement } =
+    const { htmlContent, setHtmlContent, selectedElement, setSelectedElement, elementUpdateTrigger } =
         useEditor();
 
     const iframeRef = useRef(null);
@@ -101,6 +126,39 @@ function PreviewContent() {
     const [isChatOpen, setIsChatOpen] = useState(false);  // Chat visibility state
     const [isInteractMode, setIsInteractMode] = useState(false);  // 👈 Interact mode toggle
     const [selectedElementName, setSelectedElementName] = useState("");  // 👈 For chatbot display
+
+    // Context menu state
+    const [showContextMenu, setShowContextMenu] = useState(false);
+    const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+    const [contextMenuElement, setContextMenuElement] = useState(null);
+
+    /* ---------------- SEND ELEMENT UPDATES TO IFRAME ---------------- */
+    useEffect(() => {
+        if (elementUpdateTrigger > 0 && selectedElement && iframeRef.current?.contentWindow) {
+            // Send update message to iframe for both text and class changes
+            iframeRef.current.contentWindow.postMessage(
+                {
+                    type: 'UPDATE_ELEMENT',
+                    payload: {
+                        field: 'text',
+                        value: selectedElement.text || ''
+                    }
+                },
+                '*'
+            );
+
+            iframeRef.current.contentWindow.postMessage(
+                {
+                    type: 'UPDATE_ELEMENT',
+                    payload: {
+                        field: 'classes',
+                        value: selectedElement.classes || ''
+                    }
+                },
+                '*'
+            );
+        }
+    }, [elementUpdateTrigger, selectedElement]);
 
     /* ---------------- KEYBOARD LISTENER FOR CHAT ---------------- */
     useEffect(() => {
@@ -145,12 +203,16 @@ function PreviewContent() {
                 const payload = event.data.payload;
 
                 if (isInteractMode) {
-                    // In Interact mode: Open chatbot with selected element
+                    // In Interact mode: Show context menu with options
                     const elementName = payload.id || payload.className?.split(' ')[0] || payload.tagName || 'Element';
-                    setSelectedElementName(elementName);
-                    setIsChatOpen(true);
-                    setInputValue(`[Selected: ${elementName}] `);
-                    // Don't set selectedElement to avoid opening Properties Panel
+
+                    // Get mouse position from the event or use a default position
+                    const mouseX = payload.mouseX || window.innerWidth / 2;
+                    const mouseY = payload.mouseY || window.innerHeight / 2;
+
+                    setContextMenuElement({ ...payload, elementName });
+                    setContextMenuPosition({ x: mouseX, y: mouseY });
+                    setShowContextMenu(true);
                 } else {
                     // Normal mode: Open Properties Panel
                     setSelectedElement(payload);
@@ -174,7 +236,14 @@ function PreviewContent() {
     }, [selectedElement]);
 
     /* ---------------- IFRAME SOURCE ---------------- */
-    const fullSource = `
+    // Helper to check if string is a full HTML document
+    const isFullHtml = htmlContent?.trim().toLowerCase().startsWith('<!doctype') ||
+        htmlContent?.trim().toLowerCase().startsWith('<html');
+
+    const fullSource = isFullHtml ? `
+${htmlContent}
+${isInteractMode ? interactionScript : ""}
+` : `
 <!DOCTYPE html>
 <html>
 <head>
@@ -319,7 +388,14 @@ function PreviewContent() {
                             setSelectedElementName("");
                         }}
                         onCodeUpdate={async (data) => {
-                            // If blueprint was updated, regenerate code
+                            // 1. If chat response contains direct HTML/Code, use it immediately
+                            const newHtml = data.generated_code || data.html || data.code;
+                            if (newHtml) {
+                                setHtmlContent(newHtml);
+                                return;
+                            }
+
+                            // 2. Fallback: If blueprint was updated, regenerate code via API
                             if (data.blueprint_updated) {
                                 await generateWebsite();
                             }
@@ -333,6 +409,31 @@ function PreviewContent() {
                         isInteractMode={isInteractMode}
                         onInteractToggle={() => setIsInteractMode(prev => !prev)}
                     />
+
+                    {/* Context Menu for Interact Mode */}
+                    {showContextMenu && contextMenuElement && (
+                        <ElementContextMenu
+                            position={contextMenuPosition}
+                            onGenerate={() => {
+                                // Open chatbot with selected element
+                                setSelectedElementName(contextMenuElement.elementName);
+                                setIsChatOpen(true);
+                                setInputValue(`[Selected: ${contextMenuElement.elementName}] `);
+                                setShowContextMenu(false);
+                                setContextMenuElement(null);
+                            }}
+                            onProps={() => {
+                                // Open properties panel
+                                setSelectedElement(contextMenuElement);
+                                setShowContextMenu(false);
+                                setContextMenuElement(null);
+                            }}
+                            onClose={() => {
+                                setShowContextMenu(false);
+                                setContextMenuElement(null);
+                            }}
+                        />
+                    )}
                 </>
             )}
 

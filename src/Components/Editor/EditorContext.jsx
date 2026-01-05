@@ -156,6 +156,7 @@ export const useEditor = () => {
 export const EditorProvider = ({ children }) => {
     // Ye variable store karega ki user ne kis par click kiya
     const [selectedElement, setSelectedElement] = useState(null);
+    const [elementUpdateTrigger, setElementUpdateTrigger] = useState(0);
 
     // Ye hamara Static HTML code hai (Manual Data)
     const [htmlContent, setHtmlContent] = useState(`
@@ -176,8 +177,31 @@ export const EditorProvider = ({ children }) => {
         </div>
     `);
 
+    // Update element properties and notify iframe
+    const updateElementProperty = (field, value) => {
+        if (!selectedElement) return;
+
+        // Update the selected element state
+        const updatedElement = {
+            ...selectedElement,
+            [field]: value
+        };
+
+        setSelectedElement(updatedElement);
+
+        // Trigger update to iframe
+        setElementUpdateTrigger(prev => prev + 1);
+    };
+
     return (
-        <EditorContext.Provider value={{ selectedElement, setSelectedElement, htmlContent, setHtmlContent }}>
+        <EditorContext.Provider value={{
+            selectedElement,
+            setSelectedElement,
+            htmlContent,
+            setHtmlContent,
+            updateElementProperty,
+            elementUpdateTrigger
+        }}>
             {children}
         </EditorContext.Provider>
     );
