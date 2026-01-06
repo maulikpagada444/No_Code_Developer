@@ -1,465 +1,431 @@
-# 🚀 Green Screen - AI-Powered Website Builder
+# 🚀 No-Code Developer - AI-Powered Website Builder
 
-> **No-Code Website Development Platform with AI Integration**
+> **Complete No-Code Website Development Platform with Advanced AI Integration**
 
-A modern, AI-powered website builder that allows users to create, customize, and deploy websites without writing code. Built with React, Vite, and integrated with AI for intelligent design generation.
+Enterprise-grade website builder enabling users to create, customize, and deploy professional websites without writing code. Built with React 19, Vite, and powered by AI for intelligent design generation and real-time editing.
 
 ---
 
 ## 📋 Table of Contents
-- [Features](#-features)
-- [Tech Stack](#-tech-stack)
-- [Project Structure](#-project-structure)
-- [Application Flow](#-application-flow)
-- [Setup & Installation](#-setup--installation)
-- [Environment Variables](#-environment-variables)
-- [Available Scripts](#-available-scripts)
-- [API Integration](#-api-integration)
-- [Contributing](#-contributing)
+- [✨ Features](#-features)
+- [🛠️ Tech Stack](#️-tech-stack)
+- [📁 Project Structure](#-project-structure)
+- [🚀 Quick Start](#-quick-start)
+- [🔄 Application Architecture](#-application-architecture)
+- [🎨 Core Features](#-core-features)
+- [🔌 API Reference](#-api-reference)
+- [🤝 Contributing](#-contributing)
 
 ---
 
 ## ✨ Features
 
-### 🔐 Authentication
-- **Sign Up Flow** with OTP verification
-- **Sign In** with email/password
-- **Google OAuth** integration
-- **JWT-based** authentication
-- **Route protection** (Public & Protected routes)
+### 🔐 **Authentication System**
+- Multi-step signup with OTP email verification
+- Secure login with JWT token management
+- Google OAuth 2.0 integration
+- Password reset with OTP verification
+- Protected and public route guards
+- Session persistence with HTTP-only cookies
 
-### 🎨 Dashboard
-- **User Statistics** (Active Sites, AI Generations, Published Sites)
-- **Recent Projects** overview
-- **Quick Actions** (New Project, View All Projects)
-- **Dark/Light Theme** support
-- **GSAP animations** for smooth UX
+### 🎨 **AI-Powered Dashboard**
+- Real-time statistics (Active Sites, AI Generations, Published Sites)
+- Recent projects with quick access
+- GSAP-powered smooth animations
+- Dark/Light theme with persistent preferences
+- Quick actions for project management
 
-### 🤖 AI-Powered Features
-- **AI Website Generation** from text prompts
-- **Smart Recommendations** for design and layout
-- **Color Palette Selection** with AI suggestions
-- **Template Generation** based on industry/niche
+### 🤖 **Advanced AI Features**
+- **AI Website Generation**: Create complete websites from text prompts
+- **Conversational Chatbot**: Real-time design modifications via chat
+- **Chat History**: Persistent conversation management per project
+- **Smart Recommendations**: AI-driven design suggestions
+- **Color Palette Generation**: AI-suggested color schemes
+- **Template Library**: Industry-specific templates
 
-### 🛠️ Website Builder
-- **Visual Editor** with drag-and-drop (planned)
-- **Live Preview** panel
-- **Project Workspace** for editing
-- **Real-time Updates**
+### 🛠️ **Visual Website Editor**
+- **Interactive Element Selection**: Click elements to edit in real-time
+- **Properties Panel**: Modify text, styles, attributes, and classes
+- **Undo/Redo System**: Full history with persistent state
+- **Live Preview**: Real-time iframe rendering
+- **Interact Mode Toggle**: Switch between view and edit modes
+- **Element Context Menu**: Right-click for quick actions
+- **Save/Cancel Functionality**: Persist or discard changes
+- **Session-specific Storage**: Isolated projects prevent content bleeding
 
-### 🌐 Domain Management
-- **Subdomain Dashboard**
-- **Custom Domain** connection
-- **Domain Configuration** tools
+### 🌐 **Domain & Deployment**
+- Subdomain provisioning (yoursite.platform.com)
+- Custom domain connection with DNS configuration
+- Domain verification system
+- SSL certificate integration (planned)
+
+### 📱 **Recent Enhancements**
+- ✅ Fixed preview page content isolation (Jan 2026)
+- ✅ Implemented save/cancel for element edits (Jan 2026)
+- ✅ Fixed interact mode border persistence (Jan 2026)
+- ✅ API-driven chat history system (Jan 2026)
+- ✅ Total projects count accuracy fix (Jan 2026)
+- ✅ Undo/redo state persistence (Jan 2026)
 
 ---
 
 ## 🛠️ Tech Stack
 
-### Frontend
-- **React 19.2.0** - UI library
-- **Vite 7.2.2** - Build tool & dev server
-- **React Router DOM 7.9.5** - Client-side routing
+### **Frontend Core**
+- **React 19.2.0** - Latest UI library with concurrent features
+- **Vite 7.2.2** - Lightning-fast build tool & HMR
+- **React Router DOM 7.9.5** - Declarative routing
 - **TailwindCSS 4.1.17** - Utility-first CSS framework
 
-### UI/UX Libraries
-- **Material-UI (MUI)** - Component library
-- **React Icons** - Icon library
-- **Lucide React** - Modern icon set
-- **GSAP 3.14.2** - Animation library
-- **React Simple Typewriter** - Typing animations
+### **UI/UX**
+- **Material-UI (@mui/material 7.3.6)** - Component library
+- **Lucide React** - 500+ modern icons
+- **React Icons** - Comprehensive icon set
+- **GSAP 3.14.2** - Professional-grade animations
+- **React Simple Typewriter** - Typing effects
 
-### Authentication & State
-- **JWT Decode** - Token parsing
-- **JS Cookie** - Cookie management
-- **React OAuth Google** - Google authentication
+### **State & Auth**
+- **JWT Decode 4.0.0** - Token parsing & validation
+- **JS Cookie 3.0.5** - Cookie management
+- **@react-oauth/google 0.13.4** - Google OAuth integration
+- **EditorContext** - Custom context for editor state
 
-### Development
-- **ESLint** - Code linting
-- **PostCSS** - CSS processing
-- **Autoprefixer** - CSS vendor prefixes
+### **Development Tools**
+- **ESLint 9** - Code quality enforcement
+- **PostCSS** - CSS transformations
+- **Autoprefixer** - Browser compatibility
 
 ---
 
 ## 📁 Project Structure
 
 ```
-green-screen/
+No_Code_Developer/
 │
-├── Public/                      # Static assets
+├── Public/                          # Static assets
+│   ├── favicon.ico
+│   └── assets/
 │
 ├── src/
 │   ├── Components/
-│   │   ├── Dashboard/          # Dashboard related components
-│   │   │   ├── Dashboard.jsx   # Main dashboard page
-│   │   │   ├── Project.jsx     # All projects view
-│   │   │   ├── Setting.jsx     # User settings
-│   │   │   └── Header.jsx      # Dashboard header
+│   │   ├── Dashboard/              # Dashboard & Projects
+│   │   │   ├── Dashboard.jsx       # Main dashboard with stats
+│   │   │   ├── Project.jsx         # All projects view (fixed count)
+│   │   │   ├── Setting.jsx         # User settings & preferences
+│   │   │   └── Header.jsx          # Dashboard navigation
 │   │   │
-│   │   ├── SignUp/             # Sign up flow
-│   │   │   ├── SignUpFlow.jsx  # Multi-step signup
-│   │   │   ├── SignUp.jsx      # Sign up form
-│   │   │   └── sign-otp.jsx    # OTP verification
+│   │   ├── SignUp/                 # Registration flow
+│   │   │   ├── SignUpFlow.jsx      # Multi-step registration
+│   │   │   ├── SignUp.jsx          # Registration form
+│   │   │   └── sign-otp.jsx        # OTP verification
 │   │   │
-│   │   ├── SignIn/             # Sign in flow
-│   │   │   ├── SignInFlow.jsx  # Multi-step signin
-│   │   │   ├── SignInScreen.jsx # Sign in form
-│   │   │   ├── ForgotPassword.jsx
-│   │   │   ├── ResetPassword.jsx
-│   │   │   └── PasswordSuccess.jsx
+│   │   ├── SignIn/                 # Authentication flow
+│   │   │   ├── SignInFlow.jsx      # Login flow manager
+│   │   │   ├── SignInScreen.jsx    # Login form
+│   │   │   ├── ForgotPassword.jsx  # Password reset request
+│   │   │   ├── ResetPassword.jsx   # New password setup
+│   │   │   └── PasswordSuccess.jsx # Success confirmation
 │   │   │
-│   │   ├── Home/               # Landing page
-│   │   │   └── Home.jsx
+│   │   ├── Home/                   # Landing page
+│   │   │   └── Home.jsx            # Public home page
 │   │   │
-│   │   ├── Recommendation/     # AI Recommendations
-│   │   │   ├── NewProjectModal.jsx
-│   │   │   ├── ProjectWorkspace.jsx
-│   │   │   ├── ColorSelection.jsx
-│   │   │   └── ...
+│   │   ├── Recommendation/         # Project workspace
+│   │   │   ├── NewProjectModal.jsx # AI project creation
+│   │   │   ├── ProjectWorkspace.jsx # Main workspace
+│   │   │   ├── ColorSelection.jsx  # Color palette picker
+│   │   │   └── TemplateGallery.jsx # Template selection
 │   │   │
-│   │   ├── Preview/            # Website preview
-│   │   │   ├── PreviewPanel.jsx
-│   │   │   └── ...
+│   │   ├── Preview/                # Preview system
+│   │   │   ├── PreviewPanel.jsx    # Main preview (fixed routing)
+│   │   │   ├── ChatPanel.jsx       # AI chat with history
+│   │   │   ├── ChatHistory.jsx     # Conversation manager
+│   │   │   ├── Header.jsx          # Preview header
+│   │   │   ├── BottomToolbar.jsx   # Action toolbar
+│   │   │   └── PublishModal.jsx    # Publishing wizard
 │   │   │
-│   │   ├── Editor/             # Visual editor (planned)
-│   │   │   └── ...
+│   │   ├── Editor/                 # Visual editor
+│   │   │   ├── EditorContext.jsx   # Editor state (undo/redo)
+│   │   │   ├── EditorCanvas.jsx    # Main canvas
+│   │   │   ├── PropertiesPanel.jsx # Element properties (save/cancel)
+│   │   │   ├── ElementContextMenu.jsx # Right-click menu
+│   │   │   └── initialData.js      # Default editor data
 │   │   │
-│   │   ├── Domain/             # Domain management
-│   │   │   ├── Dashboard.jsx
-│   │   │   ├── ConnectDomain.jsx
-│   │   │   └── CustomDomain.jsx
+│   │   ├── Domain/                 # Domain management
+│   │   │   ├── Dashboard.jsx       # Domain dashboard
+│   │   │   ├── ConnectDomain.jsx   # Custom domain setup
+│   │   │   └── CustomDomain.jsx    # DNS configuration
 │   │   │
-│   │   ├── Utils/              # Utility components
-│   │   │   ├── PublicRoute.jsx
-│   │   │   ├── ProtectedRoute.jsx
-│   │   │   └── ...
+│   │   ├── Utils/                  # Utilities
+│   │   │   ├── PublicRoute.jsx     # Public route guard
+│   │   │   ├── ProtectedRoute.jsx  # Auth route guard
+│   │   │   └── iframeCleanup.js    # HTML cleanup utility
 │   │   │
-│   │   └── common/             # Shared components
-│   │       └── AppAlert.jsx
+│   │   └── common/                 # Shared components
+│   │       └── AppAlert.jsx        # Toast notifications
 │   │
-│   ├── App.jsx                 # Main app with routing
-│   ├── main.jsx                # Entry point
-│   ├── ThemeProvider.jsx       # Theme context
-│   └── index.css               # Global styles
+│   ├── services/                   # API services
+│   │   └── api.js                  # Axios configuration
+│   │
+│   ├── store/                      # State management
+│   │   └── editorStore.js          # Editor state (planned)
+│   │
+│   ├── utils/                      # Helper functions
+│   │   └── helpers.js              # Common utilities
+│   │
+│   ├── App.jsx                     # Main router (fixed navigation)
+│   ├── main.jsx                    # Application entry point
+│   ├── ThemeProvider.jsx           # Theme context provider
+│   └── index.css                   # Global styles & variables
 │
-├── .env                        # Environment variables
-├── .gitignore                  # Git ignore rules
-├── API_REQUIREMENTS.md         # Backend API specifications
-├── index.html                  # HTML template
-├── package.json                # Dependencies
-├── vite.config.js              # Vite configuration
-└── README.md                   # This file
+├── .env                            # Environment variables
+├── .gitignore                      # Git ignore rules
+├── package.json                    # Dependencies
+├── vite.config.js                  # Vite configuration
+└── README.md                       # This file
 ```
 
 ---
 
-## 🔄 Application Flow
+## 🚀 Quick Start
 
-### 1️⃣ **User Entry → Landing Page**
-```
-/ → redirects to → /home
-```
-- User lands on **Home.jsx** (Landing page)
-- Can navigate to Sign Up or Sign In
+### **Prerequisites**
+- Node.js 18+ installed
+- npm or yarn package manager
+- Backend API running (see API_REQUIREMENTS.md)
 
----
+### **Installation**
 
-### 2️⃣ **Authentication Flow**
-
-#### **Sign Up Journey:**
-```
-/signup (SignUpFlow.jsx)
-    ↓
-User enters: Email, Password, Name
-    ↓
-POST /auth/signup → Backend sends OTP
-    ↓
-/signup-otp (sign-otp.jsx)
-    ↓
-User enters OTP
-    ↓
-POST /auth/verify-otp → Backend verifies
-    ↓
-JWT Token + Refresh Token stored in cookies
-    ↓
-Redirect to /dashboard
-```
-
-#### **Sign In Journey:**
-```
-/signin (SignInFlow.jsx)
-    ↓
-User enters: Email, Password
-    ↓
-POST /auth/login → Backend validates
-    ↓
-JWT Token stored in cookies
-    ↓
-Redirect to /dashboard
-```
-
-#### **Forgot Password Flow:**
-```
-/signin → Click "Forgot Password"
-    ↓
-Enter Email → POST /auth/forgot-password
-    ↓
-OTP sent to email
-    ↓
-Verify OTP → POST /auth/verify-reset-otp
-    ↓
-Reset Password → POST /auth/reset-password
-    ↓
-Success → Redirect to /signin
-```
-
----
-
-### 3️⃣ **Dashboard Flow** (Protected Route)
-
-```
-/dashboard (Dashboard.jsx)
-    ↓
-Fetch user stats: GET /auth/user/stats
-    ├── Active Sites count
-    ├── AI Generations count
-    └── Published Sites count
-    ↓
-Fetch recent projects: GET /auth/project/list
-    ↓
-Display:
-    ├── Welcome message with greeting
-    ├── Statistics cards (animated with GSAP)
-    ├── New Project card (CTA)
-    └── Recent Projects list
-```
-
-**User Actions from Dashboard:**
-- **Create New Project** → Opens NewProjectModal
-- **View All Projects** → Navigate to `/dashboard/project`
-- **Click Project** → Navigate to `/project/preview`
-- **Settings** → Navigate to `/dashboard/setting`
-
----
-
-### 4️⃣ **Project Creation Flow**
-
-```
-Dashboard → Click "New Project"
-    ↓
-NewProjectModal opens
-    ↓
-User describes website idea (AI Prompt)
-    ↓
-POST /ai/generate-website
-    ↓
-Backend generates:
-    ├── HTML structure
-    ├── CSS styles
-    ├── Suggested color palette
-    └── Page components
-    ↓
-Navigate to /project/workspace
-    ↓
-ProjectWorkspace.jsx
-    ├── Show generated design
-    ├── AI Chatbot for modifications
-    └── Edit options
-    ↓
-User can:
-    ├── Modify design via AI chat
-    ├── Select color palette (/color-selection)
-    ├── Preview website (/project/preview)
-    └── Publish project
-```
-
----
-
-### 5️⃣ **Project Management Flow**
-
-```
-/dashboard/project (Project.jsx)
-    ↓
-GET /auth/project/list → Fetch all projects
-    ↓
-Display all user projects in grid
-    ↓
-Click on project → Navigate to /project/preview
-```
-
----
-
-### 6️⃣ **Preview & Edit Flow**
-
-```
-/project/preview (PreviewPanel.jsx)
-    ↓
-Load project by project_id
-    ↓
-GET /project/{project_id}
-    ↓
-Display:
-    ├── Live website preview (iframe)
-    ├── Edit button → /project/workspace
-    ├── Settings button
-    └── Publish button
-    ↓
-User can:
-    ├── Continue editing
-    ├── Publish to subdomain
-    └── Connect custom domain
-```
-
----
-
-### 7️⃣ **Domain Management Flow**
-
-```
-Project Preview → Click "Publish"
-    ↓
-/sub-domain/dashboard (DomainDashboard.jsx)
-    ↓
-Options:
-    ├── Use Subdomain (yoursite.greenscreen.com)
-    │   → POST /domain/create-subdomain
-    │
-    └── Connect Custom Domain
-        ↓
-        /domain/connect (ConnectDomain.jsx)
-        ↓
-        Enter custom domain
-        ↓
-        POST /domain/verify-domain
-        ↓
-        /domain/custom (CustomDomain.jsx)
-        ↓
-        Configure DNS settings
-        ↓
-        POST /domain/connect-custom
-        ↓
-        Website published on custom domain
-```
-
----
-
-### 8️⃣ **Route Protection System**
-
-#### **Public Routes** (Redirect to /dashboard if logged in)
-- `/home` - Landing page
-- `/signup` - Sign up flow
-- `/signin` - Sign in flow
-- `/signup-otp` - OTP verification
-
-#### **Protected Routes** (Require authentication)
-- `/dashboard` - Main dashboard
-- `/dashboard/project` - All projects
-- `/dashboard/setting` - User settings
-- `/project/workspace` - Project editor
-- `/project/preview` - Project preview
-- `/sub-domain/dashboard` - Domain dashboard
-- `/domain/connect` - Connect domain
-- `/domain/custom` - Custom domain setup
-- `/color-selection` - Color palette selection
-
-#### **Route Guards:**
-```javascript
-PublicRoute.jsx:
-- Checks if user is authenticated (token in cookies)
-- If YES → Redirect to /dashboard
-- If NO → Show the page
-
-ProtectedRoute.jsx:
-- Checks if user is authenticated
-- If YES → Show the page
-- If NO → Redirect to /signin
-```
-
----
-
-## 🚀 Setup & Installation
-
-### Prerequisites
-- **Node.js** (v18 or higher)
-- **npm** or **yarn**
-- **Backend API** running (see API_REQUIREMENTS.md)
-
-### Installation Steps
-
-1. **Clone the repository**
 ```bash
+# 1. Clone repository
 git clone https://github.com/maulikpagada444/No_Code_Developer.git
-cd green-screen
-```
+cd No_Code_Developer
 
-2. **Install dependencies**
-```bash
+# 2. Install dependencies
 npm install
-```
 
-3. **Configure environment variables**
-Create a `.env` file in the root directory:
-```env
-VITE_API_BASE_URL=http://localhost:5000
-VITE_GOOGLE_CLIENT_ID=your_google_client_id
-```
+# 3. Configure environment
+cp .env.example .env
+# Edit .env with your values
 
-4. **Start development server**
-```bash
+# 4. Start development server
 npm run dev
+
+# 5. Open browser
+# Navigate to http://localhost:5173
 ```
 
-5. **Open browser**
-```
-http://localhost:5173
-```
+### **Environment Variables**
 
----
-
-## 🔧 Environment Variables
-
-Create a `.env` file with the following variables:
+Create `.env` file:
 
 ```env
-# Backend API URL
+# Backend API
 VITE_API_BASE_URL=http://localhost:5000
 
-# Google OAuth Client ID (optional)
+# Google OAuth (optional)
 VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
 ```
 
----
-
-## 📜 Available Scripts
+### **Available Scripts**
 
 ```bash
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Run linter
-npm run lint
+npm run dev      # Start dev server (hot reload)
+npm run build    # Production build
+npm run preview  # Preview production build
+npm run lint     # Code linting
 ```
 
 ---
 
-## 🔌 API Integration
+## 🔄 Application Architecture
 
-### Authentication Endpoints
+### **Complete User Journey**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    LANDING PAGE (/home)                     │
+│  • Hero section with features                               │
+│  • CTA buttons: Sign Up / Sign In                          │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+        ┌──────────────┴───────────────┐
+        │                              │
+┌───────▼────────┐           ┌─────────▼────────┐
+│   SIGN UP      │           │    SIGN IN       │
+│  (/signup)     │           │   (/signin)      │
+└────────┬───────┘           └─────────┬────────┘
+         │                             │
+         │ OTP Verification            │ JWT Token
+         │ (/signup-otp)               │
+         │                             │
+         └──────────────┬──────────────┘
+                        │
+                ┌───────▼────────┐
+                │   DASHBOARD    │
+                │  (Protected)   │
+                └────────┬───────┘
+                         │
+        ┌────────────────┼────────────────┐
+        │                │                │
+┌───────▼────────┐ ┌────▼────┐  ┌───────▼────────┐
+│ New Project    │ │All      │  │   Settings     │
+│ (AI Modal)     │ │Projects │  │                │
+└───────┬────────┘ └─────────┘  └────────────────┘
+        │
+        │ AI generates website
+        │
+┌───────▼─────────────────────────────────────────┐
+│         PROJECT WORKSPACE                       │
+│  • AI Chat with persistent history              │
+│  • Live preview iframe                           │
+│  • Color palette selection                       │
+│  • Template options                              │
+└────────┬────────────────────────────────────────┘
+         │
+         │ Navigate to preview
+         │
+┌────────▼─────────────────────────────────────────┐
+│         PREVIEW PANEL (session-isolated)         │
+│  • Interactive element selection (Interact Mode) │
+│  • Properties panel (Save/Cancel)                │
+│  • Undo/Redo with persistence                    │
+│  • Chat history sidebar                          │
+│  • Publish/Export options                        │
+└────────┬─────────────────────────────────────────┘
+         │
+         │ Publish website
+         │
+┌────────▼─────────────────────────────────────────┐
+│         DOMAIN MANAGEMENT                        │
+│  • Subdomain creation                            │
+│  • Custom domain connection                      │
+│  • DNS configuration                             │
+└──────────────────────────────────────────────────┘
+```
+
+---
+
+## 🎨 Core Features
+
+### **1. Visual Editor System**
+
+#### **Element Selection (Interact Mode)**
+- Toggle "Interact" mode to enable element selection
+- Click any element to select (blue border)
+- Hover preview (dotted border)
+- Clean borders removed when mode disabled or navigating away
+
+#### **Properties Panel**
+Features:
+- **Text Content**: Edit inner text of elements
+- **Styles**: Modify CSS properties (color, background, font, etc.)
+- **Attributes**: Change HTML attributes (id, href, src, etc.)
+- **Classes**: Add/remove CSS classes
+- **Save/Cancel**: Persist or discard changes
+
+#### **Undo/Redo System**
+- Full history tracking
+- Keyboard shortcuts (Ctrl+Z, Ctrl+Y)
+- Persistent across page refreshes
+- Session-specific storage
+
+#### **Session Isolation**
+- Each project uses unique localStorage keys (`html_content_${sessionId}`)
+- Prevents content bleeding between projects
+- Force remount on session change
+
+### **2. AI Chat System**
+
+#### **Conversation Management**
+```
+API Flow:
+GET /api/web-generator/conversations/{session_id}
+  → Fetch all conversations for sidebar
+
+POST /api/web-generator/conversation/new
+  → Create new chat conversation
+
+GET /api/web-generator/conversation/{conversation_id}
+  → Load specific conversation messages
+
+DELETE /api/conversations/{conversation_id}
+  → Delete conversation
+```
+
+#### **Features**
+- Persistent chat history per project
+- Multiple conversations per project
+- AI-powered design modifications
+- Real-time preview updates
+- Conversation deletion
+
+### **3. Authentication Flow**
+
+#### **Sign Up Process**
+```
+1. User fills registration form (email, password, name)
+   ↓
+2. POST /auth/signup → Backend sends OTP to email
+   ↓
+3. User enters OTP in verification screen
+   ↓
+4. POST /auth/verify-otp → Backend validates
+   ↓
+5. JWT tokens stored in cookies
+   ↓
+6. Redirect to dashboard
+```
+
+#### **Password Reset**
+```
+1. Click "Forgot Password" on login
+   ↓
+2. Enter email → POST /auth/forgot-password
+   ↓
+3. Receive OTP via email
+   ↓
+4. Verify OTP → POST /auth/verify-reset-otp
+   ↓
+5. Set new password → POST /auth/reset-password
+   ↓
+6. Success → Redirect to login
+```
+
+### **4. Dashboard Features**
+
+#### **Statistics Cards** (GSAP Animated)
+- **Active Sites**: Currently live projects
+- **AI Generations**: Total AI-generated designs
+- **Published Sites**: Deployed websites
+- **Trend Indicators**: Growth percentages
+
+#### **Recent Projects**
+- Shows latest 5 projects
+- Quick access to edit/preview
+- Total count shows ALL projects (fixed bug)
+
+#### **Quick Actions**
+- **New Project**: Opens AI modal
+- **View All**: Navigate to full project list
+- **Settings**: User preferences & account
+
+---
+
+## 🔌 API Reference
+
+### **Authentication**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/auth/signup` | Register new user |
-| POST | `/auth/verify-otp` | Verify email OTP |
-| POST | `/auth/login` | User login |
-| POST | `/auth/forgot-password` | Request password reset |
-| POST | `/auth/reset-password` | Reset password |
+| POST | `/auth/signup` | Register user, send OTP |
+| POST | `/auth/verify-otp` | Verify email with OTP |
+| POST | `/auth/login` | Login, return JWT |
+| POST | `/auth/forgot-password` | Send reset OTP |
+| POST | `/auth/verify-reset-otp` | Verify reset OTP |
+| POST | `/auth/reset-password` | Update password |
 | POST | `/auth/logout` | Logout user |
+| GET | `/auth/user/stats` | Get user statistics |
 
-### Project Endpoints
+### **Projects**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/auth/project/list` | Get all user projects |
@@ -468,128 +434,93 @@ npm run lint
 | PUT | `/project/{id}` | Update project |
 | DELETE | `/project/{id}` | Delete project |
 
-### Stats Endpoint
+### **AI & Chat**
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/auth/user/stats` | Get user statistics |
+| POST | `/ai/generate-website` | Generate website from prompt |
+| GET | `/api/web-generator/conversations/{session_id}` | Get all conversations |
+| POST | `/api/web-generator/conversation/new` | Create new conversation |
+| GET | `/api/web-generator/conversation/{conversation_id}` | Get conversation messages |
+| DELETE | `/api/conversations/{conversation_id}` | Delete conversation |
 
-**Response Format:**
-```json
-{
-  "status": "success",
-  "data": {
-    "activeSites": 5,
-    "aiGenerations": 24,
-    "publishedSites": 3,
-    "activeSitesTrend": "+12%"
-  }
-}
-```
-
-For complete API specifications, see [API_REQUIREMENTS.md](./API_REQUIREMENTS.md)
-
----
-
-## 🎨 Theme Support
-
-The application supports **Dark Mode** and **Light Mode**:
-
-- Default: **Dark Mode**
-- Toggle: Available in settings/header
-- Context: `ThemeProvider.jsx` manages theme state
-- Styling: Defined in `index.css` with CSS variables
-
----
-
-## 🔐 Authentication Flow Details
-
-### Cookie Management
-- **Access Token**: `access_token` (JWT)
-- **Refresh Token**: `refresh_token` (optional)
-- **Username**: `username` (for display)
-
-### Session Management
-- Tokens stored in **httpOnly cookies** (if backend configured)
-- Auto-redirect on token expiry
-- Remember me functionality (optional)
-
----
-
-## 📊 State Management
-
-Currently using **React Context** for:
-- **ThemeContext** - Dark/Light mode
-- **UserContext** (planned) - User information
-
-No external state management library (Redux/Zustand) used yet.
-
----
-
-## 🎯 Roadmap / Planned Features
-
-- [ ] Visual drag-and-drop editor
-- [ ] More AI templates and themes
-- [ ] Component library integration
-- [ ] Real-time collaboration (multi-user editing)
-- [ ] Version control for projects
-- [ ] Export to static files (HTML/CSS/JS)
-- [ ] SEO optimization tools
-- [ ] Analytics integration
-- [ ] Mobile app version
-
----
-
-## 🐛 Known Issues
-
-- Stats API not implemented yet (shows 0 values)
-- Some animations may lag on slower devices
-- Preview iframe security considerations
+### **Domain**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/domain/create-subdomain` | Create subdomain |
+| POST | `/domain/verify-domain` | Verify custom domain |
+| POST | `/domain/connect-custom` | Connect custom domain |
 
 ---
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+```bash
+# 1. Fork the repository
+# 2. Create feature branch
+git checkout -b feature/amazing-feature
 
----
+# 3. Commit changes
+git commit -m 'Add amazing feature'
 
-## 📝 License
+# 4. Push to branch
+git push origin feature/amazing-feature
 
-This project is private and not open-source.
+# 5. Open Pull Request
+```
 
----
-
-## 👨‍💻 Developer Notes
-
-### Important Files
-- **App.jsx** - All routes and navigation
-- **ThemeProvider.jsx** - Theme context and state
-- **index.css** - Global styles, CSS variables, animations
-- **PublicRoute.jsx** - Public route guard
-- **ProtectedRoute.jsx** - Protected route guard
-
-### Code Style
-- Use **functional components** with hooks
-- Follow **React best practices**
-- Use **TailwindCSS** classes for styling
-- Add **GSAP animations** for smooth UX
+### **Code Style Guidelines**
+- Use functional components with hooks
+- Follow React best practices
+- TailwindCSS for styling (avoid inline styles)
+- Add GSAP for animations
 - Handle errors gracefully
-
-### Testing
-- Manual testing currently
-- Unit tests (planned)
-- E2E tests (planned)
+- Write descriptive commit messages
 
 ---
 
-## 📧 Contact
+## 📝 Recent Fixes & Improvements
+
+### **January 2026 Updates**
+✅ **Preview Page Content Isolation** - Fixed localStorage caching issue  
+✅ **Save/Cancel Functionality** - Added to properties panel  
+✅ **Interact Mode Borders** - Cleaned on mode toggle/navigation  
+✅ **API-Driven Chat History** - Persistent conversations  
+✅ **Total Projects Count** - Fixed dashboard accuracy  
+✅ **Undo/Redo Persistence** - State maintained across refreshes  
+✅ **Header Navigation** - Corrected routing issues  
+
+---
+
+## 🎯 Roadmap
+
+- [ ] Drag-and-drop visual builder
+- [ ] Component library (buttons, forms, cards)
+- [ ] Template marketplace
+- [ ] Real-time collaboration (multi-user)
+- [ ] Version control for projects
+- [ ] Export to HTML/CSS/JS zip
+- [ ] SEO optimization tools
+- [ ] Analytics dashboard
+- [ ] Mobile responsive editor
+- [ ] A/B testing features
+
+---
+
+## 📧 Support
 
 For questions or support, contact the development team.
 
+**GitHub**: [maulikpagada444/No_Code_Developer](https://github.com/maulikpagada444/No_Code_Developer)
+
 ---
 
-**Built with ❤️ using React, Vite, and AI**
+<div align="center">
+
+**Built with ❤️ using React 19, Vite, and AI**
+
+![React](https://img.shields.io/badge/React-19.2.0-blue)
+![Vite](https://img.shields.io/badge/Vite-7.2.2-purple)
+![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.1.17-cyan)
+![License](https://img.shields.io/badge/License-Private-red)
+
+</div>
