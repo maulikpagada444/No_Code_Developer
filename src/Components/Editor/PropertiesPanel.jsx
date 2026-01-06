@@ -1,33 +1,128 @@
 
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useMemo, useEffect } from 'react';
 import { useEditor } from './EditorContext';
 import {
     X, Check, Image as ImageIcon, Type, Palette, Box, Layout,
-    Link as LinkIcon, Eye, EyeOff, Copy, Trash2, Code,
+    Link as LinkIcon, Eye, EyeOff, Code,
     AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline,
-    Settings, ChevronDown, ChevronUp, Maximize2, Move
+    Settings, ChevronDown, ChevronUp, Maximize2,
+    FormInput, MousePointer, Video, Square, Heading, FileText
 } from 'lucide-react';
 import { ThemeContext } from '../../ThemeProvider';
 
 const PropertiesPanel = () => {
-    const { selectedElement, setSelectedElement, updateElementProperty, saveChanges, cancelChanges } = useEditor();
+    const { selectedElement, setSelectedElement, updateElementProperty, saveChanges, cancelChanges, iframeRef } = useEditor();
     const { theme } = useContext(ThemeContext);
     const isDark = theme === 'dark';
     const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+    const [bgColor, setBgColor] = useState('#3b82f6');
+    const [textColor, setTextColor] = useState('#ffffff');
 
     // Accordion states for collapsible sections
     const [sectionsExpanded, setSectionsExpanded] = useState({
-        basic: true,
-        text: true,
-        styling: true,
+        element: true,
+        spacing: true,
+        size: true,
+        typography: true,
+        visuals: true,
+        interactions: false,
         layout: false,
-        spacing: false,
-        typography: false,
-        effects: false,
         advanced: false
     });
 
+    // Sync colors when selectedElement changes
+    useEffect(() => {
+        if (!selectedElement) return;
+
+        const classes = selectedElement.classes || '';
+
+        // Extract background color
+        const bgMatch = classes.match(/bg-\[#([a-fA-F0-9]+)\]/);
+        if (bgMatch) {
+            setBgColor(`#${bgMatch[1]}`);
+        } else if (classes.includes('bg-transparent')) {
+            setBgColor('transparent');
+        } else if (classes.includes('bg-white')) {
+            setBgColor('#ffffff');
+        } else if (classes.includes('bg-black')) {
+            setBgColor('#000000');
+        }
+
+        // Extract text color
+        const textMatch = classes.match(/text-\[#([a-fA-F0-9]+)\]/);
+        if (textMatch) {
+            setTextColor(`#${textMatch[1]}`);
+        } else if (classes.includes('text-white')) {
+            setTextColor('#ffffff');
+        } else if (classes.includes('text-black')) {
+            setTextColor('#000000');
+        }
+    }, [selectedElement]);
+
+    // Determine element type for dynamic rendering
+    const elementType = useMemo(() => {
+        if (!selectedElement) return null;
+
+        // Check elementType from iframe first, then fallback to tagName
+        if (selectedElement.elementType) return selectedElement.elementType;
+
+        // Fallback detection based on tagName
+        const tag = selectedElement.tagName?.toLowerCase();
+        switch (tag) {
+            case 'img': return 'image';
+            case 'a': return 'link';
+            case 'button': return 'button';
+            case 'input':
+            case 'textarea':
+            case 'select': return 'input';
+            case 'video':
+            case 'audio': return 'media';
+            case 'h1':
+            case 'h2':
+            case 'h3':
+            case 'h4':
+            case 'h5':
+            case 'h6': return 'heading';
+            case 'p':
+            case 'span':
+            case 'label': return 'text';
+            case 'div':
+            case 'section':
+            case 'article':
+            case 'header':
+            case 'footer':
+            case 'nav':
+            case 'aside':
+            case 'main': return 'container';
+            case 'ul':
+            case 'ol': return 'list';
+            case 'li': return 'listItem';
+            default: return 'generic';
+        }
+    }, [selectedElement]);
+
+    // Get element type info for header
+    const getElementInfo = () => {
+        const typeConfig = {
+            'image': { icon: ImageIcon, label: 'Image', color: 'text-green-400' },
+            'link': { icon: LinkIcon, label: 'Link', color: 'text-blue-400' },
+            'button': { icon: MousePointer, label: 'Button', color: 'text-purple-400' },
+            'input': { icon: FormInput, label: 'Input Field', color: 'text-yellow-400' },
+            'media': { icon: Video, label: 'Media', color: 'text-red-400' },
+            'heading': { icon: Heading, label: 'Heading', color: 'text-orange-400' },
+            'text': { icon: FileText, label: 'Text', color: 'text-cyan-400' },
+            'container': { icon: Box, label: 'Container', color: 'text-indigo-400' },
+            'list': { icon: Type, label: 'List', color: 'text-pink-400' },
+            'listItem': { icon: Type, label: 'List Item', color: 'text-pink-400' },
+            'generic': { icon: Square, label: 'Element', color: 'text-gray-400' }
+        };
+        return typeConfig[elementType] || typeConfig.generic;
+    };
+
     if (!selectedElement) return null;
+
+    const elementInfo = getElementInfo();
+    const ElementIcon = elementInfo.icon;
 
     // Helper to safely get values
     const val = (v) => v || '';
@@ -36,21 +131,16 @@ const PropertiesPanel = () => {
         setSectionsExpanded(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
-    const handleTextChange = (e) => {
-        updateElementProperty('text', e.target.value);
-    };
-
-    const handleClassChange = (e) => {
-        updateElementProperty('classes', e.target.value);
-    };
-
-    const handleStyleChange = (property, value) => {
-        const currentStyles = selectedElement.styles || {};
-        updateElementProperty('styles', { ...currentStyles, [property]: value });
-    };
-
     const handleAttributeChange = (attr, value) => {
         updateElementProperty(attr, value);
+
+        // If classes changed, also update iframe immediately
+        if (attr === 'classes' && iframeRef?.current?.contentWindow) {
+            iframeRef.current.contentWindow.postMessage({
+                type: 'UPDATE_ELEMENT',
+                payload: { field: 'classes', value: value }
+            }, '*');
+        }
     };
 
     const handleImageChange = (e) => {
@@ -74,840 +164,660 @@ const PropertiesPanel = () => {
         cancelChanges();
     };
 
+    // Common styles
+    // Common styles
+    const inputClass = `w-full p-2.5 border rounded-lg text-sm transition-all focus:ring-2 focus:ring-blue-500/50 focus:outline-none ${isDark
+        ? 'bg-[#2a2a2a] border-white/5 text-white placeholder-gray-500 focus:bg-[#333]'
+        : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:bg-white'
+        }`;
+
+    const labelClass = `text-[10px] uppercase font-bold tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-400'}`;
+
+    const buttonClass = `px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${isDark
+        ? 'bg-[#2a2a2a] hover:bg-blue-600/20 hover:text-blue-400 text-gray-400 border border-transparent hover:border-blue-500/30'
+        : 'bg-gray-100 hover:bg-blue-600 hover:text-white text-gray-700'
+        }`;
+
+    const toggleBtnClass = (isActive) => `px-3 py-2 rounded-lg text-xs font-bold transition-all duration-200 border ${isActive
+        ? 'bg-blue-600 text-white border-blue-600'
+        : isDark ? 'bg-[#2a2a2a] hover:bg-[#333] text-gray-400 border-white/5' : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
+        }`;
+
     // Section Header Component
     const SectionHeader = ({ title, icon: Icon, expanded, section }) => (
         <button
             onClick={() => toggleSection(section)}
-            className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${isDark
+            className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-300 ${isDark
                 ? 'hover:bg-white/5 text-white'
                 : 'hover:bg-gray-100 text-gray-900'
                 }`}
         >
-            <div className="flex items-center gap-2">
-                <Icon size={16} className={isDark ? 'text-blue-400' : 'text-blue-600'} />
-                <span className="font-semibold text-sm">{title}</span>
+            <div className="flex items-center gap-3">
+                <div className={`p-1.5 rounded-lg ${isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-100 text-blue-600'}`}>
+                    <Icon size={14} />
+                </div>
+                <span className="font-bold text-xs uppercase tracking-wider">{title}</span>
             </div>
-            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            <div className={`transition-transform duration-300 ${expanded ? 'rotate-0' : 'rotate-180'}`}>
+                <ChevronUp size={14} className={isDark ? 'text-gray-600' : 'text-gray-400'} />
+            </div>
         </button>
     );
 
-    return (
-        <div className={`h-full flex flex-col border-l shadow-xl z-50 w-[340px] ${isDark ? 'bg-[#1a1a1a] border-white/10' : 'bg-white border-gray-200'
-            }`}>
-            {/* Header */}
-            <div className={`h-14 border-b flex items-center justify-between px-5 ${isDark ? 'bg-[#1a1a1a] border-white/10' : 'bg-white border-gray-200'
-                }`}>
-                <div className="flex items-center gap-2">
-                    <Settings size={18} className={isDark ? 'text-blue-400' : 'text-blue-600'} />
-                    <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                        Edit Element
-                    </span>
+    // Color Picker Component
+    const ColorPicker = ({ label, colorState, setColorState, colorType = 'bg' }) => {
+        const isBackground = colorType === 'bg';
+        const presetColors = isBackground
+            ? [
+                { color: '#3b82f6', class: 'bg-blue-500' },
+                { color: '#22c55e', class: 'bg-green-500' },
+                { color: '#ef4444', class: 'bg-red-500' },
+                { color: '#eab308', class: 'bg-yellow-500' },
+                { color: '#ffffff', class: 'bg-white' },
+                { color: '#000000', class: 'bg-black' },
+                { color: 'transparent', class: 'bg-transparent' }
+            ]
+            : [
+                { color: '#ffffff', class: 'text-white' },
+                { color: '#000000', class: 'text-black' },
+                { color: '#3b82f6', class: 'text-blue-500' },
+                { color: '#22c55e', class: 'text-green-500' },
+                { color: '#ef4444', class: 'text-red-500' },
+                { color: '#6b7280', class: 'text-gray-500' }
+            ];
+
+        const applyColor = (color, cls) => {
+            setColorState(color);
+            let classes = selectedElement.classes || '';
+            if (isBackground) {
+                classes = classes.replace(/bg-\S+/g, '').replace(/bg-\[#[a-fA-F0-9]+\]/g, '').trim();
+            } else {
+                classes = classes.replace(/text-\S+-\d+/g, '').replace(/text-white/g, '').replace(/text-black/g, '').replace(/text-\[#[a-fA-F0-9]+\]/g, '').trim();
+            }
+            handleAttributeChange('classes', `${classes} ${cls || (isBackground ? `bg-[${color}]` : `text-[${color}]`)}`.trim());
+        };
+
+        return (
+            <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                    <label className={labelClass}>{label}</label>
+                    <span className="text-[10px] font-mono text-gray-500 uppercase tracking-tighter">{colorState}</span>
                 </div>
-                <button
-                    onClick={() => setSelectedElement(null)}
-                    className={`transition ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-gray-600'
-                        }`}
-                >
-                    <X size={20} />
-                </button>
+                <div className="flex gap-3 items-center">
+                    <label className="relative cursor-pointer group">
+                        <div
+                            className="w-11 h-11 rounded-xl border-2 border-white/10 shadow-lg flex items-center justify-center group-hover:scale-105 transition-all duration-200 overflow-hidden"
+                            style={{
+                                backgroundColor: colorState === 'transparent' ? 'transparent' : colorState,
+                                backgroundImage: colorState === 'transparent' ? 'linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc), linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc)' : 'none',
+                                backgroundSize: '10px 10px',
+                                backgroundPosition: '0 0, 5px 5px'
+                            }}
+                        >
+                            <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <Palette size={16} className={colorState === '#ffffff' || colorState === '#eab308' || colorState === 'transparent' ? 'text-black/30' : 'text-white/30'} />
+                        </div>
+                        <input
+                            type="color"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            value={colorState === 'transparent' ? '#ffffff' : (colorState.startsWith('#') ? colorState : '#ffffff')}
+                            onChange={(e) => applyColor(e.target.value)}
+                        />
+                    </label>
+                    <div className="flex gap-1.5 flex-1 flex-wrap">
+                        {presetColors.map(({ color, class: cls }) => (
+                            <button
+                                key={cls}
+                                onClick={() => applyColor(color, cls)}
+                                style={{
+                                    backgroundColor: color === 'transparent' ? 'transparent' : color,
+                                    backgroundImage: color === 'transparent' ? 'linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc), linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc)' : 'none',
+                                    backgroundSize: '8px 8px',
+                                    backgroundPosition: '0 0, 4px 4px'
+                                }}
+                                className={`w-6 h-6 rounded-lg border transition-all duration-200 hover:scale-110 active:scale-95 ${colorState === color ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-[#1a1a1a] border-white/40' : 'border-white/10'}`}
+                                title={cls}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // Reusable Property Selection Grid
+    const PropertyGrid = ({ label, options, currentClass, regex, prefix = '', onChange }) => (
+        <div className="space-y-2">
+            {label && <label className={labelClass}>{label}</label>}
+            <div className={`flex flex-wrap gap-1.5 p-1 rounded-xl ${isDark ? 'bg-white/5' : 'bg-gray-100'}`}>
+                {options.map(opt => {
+                    const optValue = typeof opt === 'object' ? opt.value : opt;
+                    const optLabel = typeof opt === 'object' ? opt.label : opt.includes('-') ? opt.split('-').pop() : opt;
+                    const fullClass = prefix ? `${prefix}${optValue}` : optValue;
+                    const isActive = currentClass?.split(' ').some(c => c === fullClass) || (regex && regex.test(currentClass) && currentClass.includes(fullClass));
+
+                    return (
+                        <button
+                            key={optValue}
+                            onClick={() => {
+                                let classes = selectedElement.classes || '';
+                                if (regex) classes = classes.replace(regex, '').trim();
+                                onChange(`${classes} ${fullClass}`.trim());
+                            }}
+                            className={`flex-1 min-w-0 py-1.5 px-1 rounded-lg transition-all duration-200 text-[10px] font-bold tracking-tight uppercase ${isActive
+                                ? 'bg-blue-600 text-white shadow-lg scale-105 z-10'
+                                : isDark
+                                    ? 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                                }`}
+                            title={fullClass}
+                        >
+                            <span className="truncate block w-full uppercase">{optLabel}</span>
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+
+    // ============ REUSABLE SECTIONS ============
+
+    const SpacingSection = () => (
+        <div className="space-y-4 py-4 border-t border-white/5">
+            <SectionHeader title="Spacing" icon={Box} expanded={sectionsExpanded.spacing} section="spacing" />
+            {sectionsExpanded.spacing && (
+                <div className="space-y-4 px-2">
+                    <PropertyGrid
+                        label="Padding"
+                        options={['p-0', 'p-2', 'p-4', 'p-6', 'p-8', 'p-12']}
+                        currentClass={selectedElement.classes}
+                        regex={/\bp-\d+/g}
+                        onChange={(val) => handleAttributeChange('classes', val)}
+                    />
+                    <PropertyGrid
+                        label="Margin"
+                        options={['m-0', 'm-2', 'm-4', 'm-6', 'm-8', 'm-12']}
+                        currentClass={selectedElement.classes}
+                        regex={/\bm-\d+/g}
+                        onChange={(val) => handleAttributeChange('classes', val)}
+                    />
+                    <PropertyGrid
+                        label="Gap (Flex/Grid)"
+                        options={['gap-0', 'gap-2', 'gap-4', 'gap-8', 'gap-12']}
+                        currentClass={selectedElement.classes}
+                        regex={/\bgap-\d+/g}
+                        onChange={(val) => handleAttributeChange('classes', val)}
+                    />
+                </div>
+            )}
+        </div>
+    );
+
+    const SizeSection = ({ showMinMax = false }) => (
+        <div className="space-y-4 py-4 border-t border-white/5">
+            <SectionHeader title="Dimensions" icon={Maximize2} expanded={sectionsExpanded.size} section="size" />
+            {sectionsExpanded.size && (
+                <div className="space-y-4 px-2">
+                    <div className="grid grid-cols-2 gap-4">
+                        <PropertyGrid
+                            label="Width"
+                            options={['w-auto', 'w-full', 'w-fit']}
+                            currentClass={selectedElement.classes}
+                            regex={/\bw-\S+/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                        <PropertyGrid
+                            label="Height"
+                            options={['h-auto', 'h-full', 'h-fit']}
+                            currentClass={selectedElement.classes}
+                            regex={/\bh-\S+/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                    </div>
+                    {showMinMax && (
+                        <div className="grid grid-cols-2 gap-4">
+                            <PropertyGrid
+                                label="Max Width"
+                                options={['max-w-xs', 'max-w-md', 'max-w-full']}
+                                currentClass={selectedElement.classes}
+                                regex={/\bmax-w-\S+/g}
+                                onChange={(val) => handleAttributeChange('classes', val)}
+                            />
+                            <PropertyGrid
+                                label="Aspect Ratio"
+                                options={['aspect-auto', 'aspect-square', 'aspect-video']}
+                                currentClass={selectedElement.classes}
+                                regex={/\baspect-\S+/g}
+                                onChange={(val) => handleAttributeChange('classes', val)}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+
+    const TypographySection = () => (
+        <div className="space-y-4 py-4 border-t border-white/5">
+            <SectionHeader title="Typography" icon={Type} expanded={sectionsExpanded.typography} section="typography" />
+            {sectionsExpanded.typography && (
+                <div className="space-y-4 px-2">
+                    <ColorPicker label="Text Color" colorState={textColor} setColorState={setTextColor} colorType="text" />
+
+                    <PropertyGrid
+                        label="Font Size"
+                        options={['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl', 'text-4xl']}
+                        currentClass={selectedElement.classes}
+                        regex={/\btext-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl)/g}
+                        onChange={(val) => handleAttributeChange('classes', val)}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <PropertyGrid
+                            label="Weight"
+                            options={['font-normal', 'font-medium', 'font-bold']}
+                            currentClass={selectedElement.classes}
+                            regex={/\bfont-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                        <PropertyGrid
+                            label="Align"
+                            options={['text-left', 'text-center', 'text-right']}
+                            currentClass={selectedElement.classes}
+                            regex={/\btext-(left|center|right|justify)/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <PropertyGrid
+                            label="Transform"
+                            options={['uppercase', 'lowercase', 'capitalize']}
+                            currentClass={selectedElement.classes}
+                            regex={/\b(uppercase|lowercase|capitalize|normal-case)\b/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                        <PropertyGrid
+                            label="Decoration"
+                            options={['underline', 'line-through', 'no-underline']}
+                            currentClass={selectedElement.classes}
+                            regex={/\b(underline|line-through|no-underline)\b/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <PropertyGrid
+                            label="Line Height"
+                            options={['leading-tight', 'leading-normal', 'leading-loose']}
+                            currentClass={selectedElement.classes}
+                            regex={/\bleading-\S+/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                        <PropertyGrid
+                            label="Letter Spacing"
+                            options={['tracking-tight', 'tracking-normal', 'tracking-wide']}
+                            currentClass={selectedElement.classes}
+                            regex={/\btracking-\S+/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
+    const VisualSection = () => (
+        <div className="space-y-4 py-4 border-t border-white/5">
+            <SectionHeader title="Visuals" icon={Palette} expanded={sectionsExpanded.visuals} section="visuals" />
+            {sectionsExpanded.visuals && (
+                <div className="space-y-4 px-2">
+                    <ColorPicker label="Background" colorState={bgColor} setColorState={setBgColor} colorType="bg" />
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <PropertyGrid
+                            label="Radius"
+                            options={['rounded-none', 'rounded-lg', 'rounded-3xl', 'rounded-full']}
+                            currentClass={selectedElement.classes}
+                            regex={/\brounded\S*/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                        <PropertyGrid
+                            label="Shadow"
+                            options={['shadow-none', 'shadow', 'shadow-lg', 'shadow-2xl']}
+                            currentClass={selectedElement.classes}
+                            regex={/\bshadow\S*/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <PropertyGrid
+                            label="Opacity"
+                            options={['opacity-100', 'opacity-75', 'opacity-50', 'opacity-25']}
+                            currentClass={selectedElement.classes}
+                            regex={/\bopacity-\d+/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                        <PropertyGrid
+                            label="Border"
+                            options={['border-0', 'border', 'border-2', 'border-4']}
+                            currentClass={selectedElement.classes}
+                            regex={/\bborder-\d+/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
+    const InteractionSection = () => (
+        <div className="space-y-4 py-4 border-t border-white/5">
+            <SectionHeader title="Interactions" icon={MousePointer} expanded={sectionsExpanded.interactions} section="interactions" />
+            {sectionsExpanded.interactions && (
+                <div className="space-y-4 px-2">
+                    <div className="grid grid-cols-2 gap-4">
+                        <PropertyGrid
+                            label="Cursor"
+                            options={['cursor-auto', 'cursor-pointer', 'cursor-move']}
+                            currentClass={selectedElement.classes}
+                            regex={/\bcursor-\S+/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                        <PropertyGrid
+                            label="Transition"
+                            options={['transition-none', 'transition-all', 'transition-colors']}
+                            currentClass={selectedElement.classes}
+                            regex={/\btransition\S+/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                    </div>
+                    <PropertyGrid
+                        label="Hover Effect (Scale)"
+                        options={['hover:scale-100', 'hover:scale-105', 'hover:scale-110', 'hover:scale-125']}
+                        currentClass={selectedElement.classes}
+                        regex={/\bhover:scale-\d+/g}
+                        onChange={(val) => handleAttributeChange('classes', val)}
+                    />
+                </div>
+            )}
+        </div>
+    );
+
+    const LayoutAdvancedSection = () => (
+        <div className="space-y-4 py-4 border-t border-white/5">
+            <SectionHeader title="Layout" icon={Layout} expanded={sectionsExpanded.layout} section="layout" />
+            {sectionsExpanded.layout && (
+                <div className="space-y-4 px-2">
+                    <PropertyGrid
+                        label="Display"
+                        options={['block', 'flex', 'grid', 'hidden']}
+                        currentClass={selectedElement.classes}
+                        regex={/\b(block|flex|grid|inline-block|hidden)\b/g}
+                        onChange={(val) => handleAttributeChange('classes', val)}
+                    />
+                    <div className="grid grid-cols-2 gap-4">
+                        <PropertyGrid
+                            label="Direction"
+                            options={['row', 'col']}
+                            prefix="flex-"
+                            currentClass={selectedElement.classes}
+                            regex={/\bflex-(row|col)\S*/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                        <PropertyGrid
+                            label="Justify"
+                            options={['start', 'center', 'between']}
+                            prefix="justify-"
+                            currentClass={selectedElement.classes}
+                            regex={/\bjustify-\S+/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <PropertyGrid
+                            label="Align"
+                            options={['start', 'center', 'stretch']}
+                            prefix="items-"
+                            currentClass={selectedElement.classes}
+                            regex={/\bitems-\S+/g}
+                            onChange={(val) => handleAttributeChange('classes', val)}
+                        />
+                        <PropertyGrid
+                            label="Position"
+                            options={['rel', 'abs', 'fix']}
+                            currentClass={selectedElement.classes}
+                            regex={/\b(static|relative|absolute|fixed|sticky)\b/g}
+                            onChange={(val) => {
+                                const map = { 'rel': 'relative', 'abs': 'absolute', 'fix': 'fixed' };
+                                handleAttributeChange('classes', val.replace(/\b(rel|abs|fix)\b/g, m => map[m] || m));
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+
+    // ============ ELEMENT-SPECIFIC PANELS ============
+
+    // IMAGE Panel
+    const ImagePanel = () => (
+        <div className="space-y-4">
+            <div className="p-3 rounded-xl space-y-3 bg-white/5 border border-white/5">
+                <label className={labelClass}>Source & Alt</label>
+                <div className="space-y-2">
+                    <input type="text" className={inputClass} value={val(selectedElement.src)} onChange={(e) => handleAttributeChange('src', e.target.value)} placeholder="Image URL" />
+                    <input type="text" className={inputClass} value={val(selectedElement.alt)} onChange={(e) => handleAttributeChange('alt', e.target.value)} placeholder="Alt text" />
+                </div>
             </div>
 
-            {/* Content Form */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <SizeSection showMinMax />
 
-                {/* BASIC INFO SECTION */}
-                <div className={`border rounded-xl overflow-hidden ${isDark ? 'border-white/10' : 'border-gray-200'
-                    }`}>
-                    <SectionHeader title="Basic Info" icon={Type} expanded={sectionsExpanded.basic} section="basic" />
+            <div className="p-3 bg-white/5 rounded-xl space-y-4 border border-white/5">
+                <PropertyGrid label="Fitting" options={['contain', 'cover', 'fill']} prefix="object-" currentClass={selectedElement.classes} regex={/\bobject-(contain|cover|fill|none|scale-down)\b/g} onChange={(val) => handleAttributeChange('classes', val)} />
+                <div className="space-y-2">
+                    <label className={labelClass}>Loading Strategy</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button onClick={() => handleAttributeChange('loading', 'lazy')} className={toggleBtnClass(selectedElement.loading === 'lazy')}>Lazy Load</button>
+                        <button onClick={() => handleAttributeChange('loading', 'eager')} className={toggleBtnClass(selectedElement.loading === 'eager')}>Instant</button>
+                    </div>
+                </div>
+            </div>
 
-                    {sectionsExpanded.basic && (
-                        <div className="p-4 space-y-4">
-                            {/* Tag (Read-only) */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Element Tag
-                                </label>
-                                <input
-                                    type="text"
-                                    className={`w-full p-2.5 border rounded-lg text-sm transition-all ${isDark
-                                        ? 'bg-[#2a2a2a] border-white/10 text-white'
-                                        : 'bg-gray-50 border-gray-200 text-gray-900'
-                                        }`}
-                                    value={val(selectedElement.tagName?.toUpperCase())}
-                                    readOnly
-                                />
-                            </div>
+            <VisualSection />
+            <InteractionSection />
+        </div>
+    );
 
-                            {/* ID Attribute */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Element ID
-                                </label>
-                                <input
-                                    type="text"
-                                    className={`w-full p-2.5 border rounded-lg text-sm transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none ${isDark
-                                        ? 'bg-[#2a2a2a] border-white/10 text-white focus:bg-[#333]'
-                                        : 'bg-gray-50 border-gray-200 text-gray-900 focus:bg-white'
-                                        }`}
-                                    value={val(selectedElement.id)}
-                                    onChange={(e) => handleAttributeChange('id', e.target.value)}
-                                    placeholder="element-id"
-                                />
-                            </div>
+    // LINK Panel
+    const LinkPanel = () => (
+        <div className="space-y-4">
+            <div className="p-3 rounded-xl space-y-4 bg-white/5 border border-white/5">
+                <div className="space-y-2">
+                    <label className={labelClass}>Destination (URL)</label>
+                    <input type="text" className={inputClass} value={val(selectedElement.href)} onChange={(e) => handleAttributeChange('href', e.target.value)} placeholder="https://..." />
+                </div>
+                <div className="space-y-2">
+                    <label className={labelClass}>Display Text</label>
+                    <input type="text" className={inputClass} value={val(selectedElement.text)} onChange={(e) => handleAttributeChange('text', e.target.value)} placeholder="Link Text" />
+                </div>
+                <div className="space-y-2">
+                    <label className={labelClass}>Behavior</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button onClick={() => handleAttributeChange('target', '_self')} className={toggleBtnClass(selectedElement.target !== '_blank')}>Same Tab</button>
+                        <button onClick={() => handleAttributeChange('target', '_blank')} className={toggleBtnClass(selectedElement.target === '_blank')}>New Window</button>
+                    </div>
+                </div>
+            </div>
+            <TypographySection />
+            <SizeSection />
+            <SpacingSection />
+            <VisualSection />
+            <InteractionSection />
+        </div>
+    );
 
-                            {/* Visibility Toggle */}
-                            <div className="flex items-center justify-between">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Visibility
-                                </label>
-                                <button
-                                    onClick={() => {
-                                        const isHidden = selectedElement.classes?.includes('hidden');
-                                        const newClasses = isHidden
-                                            ? selectedElement.classes.replace('hidden', '').trim()
-                                            : `${selectedElement.classes || ''} hidden`.trim();
-                                        updateElementProperty('classes', newClasses);
-                                    }}
-                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${isDark
-                                        ? 'bg-[#2a2a2a] hover:bg-[#333] text-white'
-                                        : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                                        }`}
-                                >
-                                    {selectedElement.classes?.includes('hidden') ? (
-                                        <><EyeOff size={16} /> Hidden</>
-                                    ) : (
-                                        <><Eye size={16} /> Visible</>
-                                    )}
-                                </button>
-                            </div>
-                        </div>
-                    )}
+    // BUTTON Panel
+    const ButtonPanel = () => (
+        <div className="space-y-4">
+            <div className="p-3 rounded-xl space-y-4 bg-white/5 border border-white/5">
+                <div className="space-y-2">
+                    <label className={labelClass}>Button Label</label>
+                    <input type="text" className={inputClass} value={val(selectedElement.text)} onChange={(e) => handleAttributeChange('text', e.target.value)} placeholder="Click Me" />
                 </div>
 
-                {/* IMAGE SECTION - Only for IMG tags */}
-                {selectedElement.tagName === 'img' && (
-                    <div className={`border rounded-xl overflow-hidden ${isDark ? 'border-white/10' : 'border-gray-200'
-                        }`}>
-                        <SectionHeader title="Image" icon={ImageIcon} expanded={sectionsExpanded.basic} section="basic" />
+                <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
+                        <label className={labelClass}>Active State</label>
+                        <button onClick={() => handleAttributeChange('disabled', !selectedElement.disabled)} className={`w-full py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${selectedElement.disabled ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 'bg-green-500/20 text-green-500 border border-green-500/30'}`}>
+                            {selectedElement.disabled ? 'Disabled' : 'Enabled'}
+                        </button>
+                    </div>
+                    <div className="space-y-2">
+                        <label className={labelClass}>Processing</label>
+                        <button onClick={() => handleAttributeChange('loading', !selectedElement.loading)} className={`w-full py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${selectedElement.loading ? 'bg-blue-600 shadow-lg shadow-blue-500/20 text-white' : 'bg-white/5 text-gray-500 border border-white/5'}`}>
+                            {selectedElement.loading ? 'loading...' : 'normal'}
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-                        <div className="p-4 space-y-3">
-                            {/* Current Image Preview */}
-                            {selectedElement.src && (
-                                <div className={`relative aspect-video rounded-lg overflow-hidden border ${isDark ? 'border-white/10' : 'border-gray-200'
-                                    }`}>
-                                    <img
-                                        src={selectedElement.src}
-                                        alt="Preview"
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                            )}
+            <TypographySection />
+            <VisualSection />
+            <SpacingSection />
+            <SizeSection />
+            <InteractionSection />
+        </div>
+    );
 
-                            <div className="flex flex-col gap-2">
-                                <label className={`
-                                    cursor-pointer flex items-center justify-center gap-2 p-3 border-2 border-dashed rounded-lg transition-all
-                                    ${isDark
-                                        ? 'border-white/10 hover:border-blue-500/50 hover:bg-blue-500/5 text-gray-400 hover:text-blue-400'
-                                        : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50 text-gray-500 hover:text-blue-600'}
-                                `}>
-                                    <ImageIcon size={18} />
-                                    <span className="text-sm font-medium">Choose New Image</span>
-                                    <input
-                                        type="file"
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={handleImageChange}
-                                    />
-                                </label>
+    // CONTAINER Panel
+    const ContainerPanel = () => (
+        <div className="space-y-4">
+            <LayoutAdvancedSection />
+            <SpacingSection />
+            <SizeSection showMinMax />
+            <VisualSection />
+            <InteractionSection />
+        </div>
+    );
 
-                                <input
-                                    type="text"
-                                    className={`w-full p-2.5 border rounded-lg text-sm transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none ${isDark
-                                        ? 'bg-[#2a2a2a] border-white/10 text-white focus:bg-[#333]'
-                                        : 'bg-gray-50 border-gray-200 text-gray-900 focus:bg-white'
-                                        }`}
-                                    value={val(selectedElement.src)}
-                                    onChange={(e) => updateElementProperty('src', e.target.value)}
-                                    placeholder="Or enter image URL..."
-                                />
+    // TEXT / HEADING Panel
+    const TextPanel = () => (
+        <div className="space-y-4">
+            <div className="p-3 rounded-xl space-y-3 bg-white/5 border border-white/5">
+                <label className={labelClass}>Content Editor</label>
+                <textarea className={`${inputClass} min-h-[120px] font-medium leading-relaxed`} value={val(selectedElement.text)} onChange={(e) => handleAttributeChange('text', e.target.value)} placeholder="Type your content here..." />
+            </div>
 
-                                {/* Alt Text */}
-                                <input
-                                    type="text"
-                                    className={`w-full p-2.5 border rounded-lg text-sm transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none ${isDark
-                                        ? 'bg-[#2a2a2a] border-white/10 text-white focus:bg-[#333]'
-                                        : 'bg-gray-50 border-gray-200 text-gray-900 focus:bg-white'
-                                        }`}
-                                    value={val(selectedElement.alt)}
-                                    onChange={(e) => handleAttributeChange('alt', e.target.value)}
-                                    placeholder="Alt text (for accessibility)"
-                                />
+            <TypographySection />
+            <SpacingSection />
+            <SizeSection />
+            <VisualSection />
+            <InteractionSection />
+        </div>
+    );
+
+    // GENERIC Panel (Fallbacks)
+    const GenericPanel = () => (
+        <div className="space-y-4">
+            <div className="p-3 rounded-xl space-y-4 bg-white/5 border border-white/5">
+                <div className="space-y-2">
+                    <label className={labelClass}>Inner Text / HTML</label>
+                    <textarea className={`${inputClass} min-h-[80px]`} value={val(selectedElement.text)} onChange={(e) => handleAttributeChange('text', e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                    <label className={labelClass}>Tailwind Classes</label>
+                    <textarea className={`${inputClass} min-h-[60px] font-mono text-xs text-blue-400`} value={val(selectedElement.classes)} onChange={(e) => handleAttributeChange('classes', e.target.value)} />
+                </div>
+            </div>
+            <VisualSection />
+            <SpacingSection />
+            <InteractionSection />
+        </div>
+    );
+
+    // Render Mapping
+    const renderElementPanel = () => {
+        switch (elementType) {
+            case 'image': return <ImagePanel />;
+            case 'link': return <LinkPanel />;
+            case 'button': return <ButtonPanel />;
+            case 'heading':
+            case 'text':
+            case 'list':
+            case 'listItem': return <TextPanel />;
+            case 'container': return <ContainerPanel />;
+            default: return <GenericPanel />;
+        }
+    };
+
+    return (
+        <div className={`h-full flex flex-col border-l shadow-2xl z-50 w-[350px] overflow-hidden ${isDark ? 'bg-[#121212] border-white/5' : 'bg-white border-gray-200'}`}>
+
+            {/* Premium Header */}
+            <div className={`relative border-b px-5 py-5 ${isDark ? 'bg-[#1a1a1a] border-white/5' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-transform hover:scale-105 ${isDark ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20' : 'bg-blue-50 text-blue-600 border border-blue-200'}`}>
+                            <ElementIcon size={20} />
+                        </div>
+                        <div>
+                            <p className={`font-black text-sm uppercase tracking-tighter ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                {elementInfo.label}
+                            </p>
+                            <div className="flex items-center gap-1.5 pt-0.5">
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono ${isDark ? 'bg-white/5 text-gray-500' : 'bg-gray-100 text-gray-400'}`}>
+                                    &lt;{selectedElement.tagName.toLowerCase()}&gt;
+                                </span>
+                                {selectedElement.id && (
+                                    <span className={`text-[10px] font-mono ${isDark ? 'text-blue-400/60' : 'text-blue-500'}`}>#{selectedElement.id}</span>
+                                )}
                             </div>
                         </div>
                     </div>
-                )}
-
-                {/* LINK SECTION - Only for A tags */}
-                {selectedElement.tagName === 'a' && (
-                    <div className={`border rounded-xl overflow-hidden ${isDark ? 'border-white/10' : 'border-gray-200'
-                        }`}>
-                        <SectionHeader title="Link" icon={LinkIcon} expanded={sectionsExpanded.basic} section="basic" />
-
-                        <div className="p-4 space-y-3">
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    URL (href)
-                                </label>
-                                <input
-                                    type="text"
-                                    className={`w-full p-2.5 border rounded-lg text-sm transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none ${isDark
-                                        ? 'bg-[#2a2a2a] border-white/10 text-white focus:bg-[#333]'
-                                        : 'bg-gray-50 border-gray-200 text-gray-900 focus:bg-white'
-                                        }`}
-                                    value={val(selectedElement.href)}
-                                    onChange={(e) => handleAttributeChange('href', e.target.value)}
-                                    placeholder="https://example.com"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Target
-                                </label>
-                                <select
-                                    className={`w-full p-2.5 border rounded-lg text-sm transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none ${isDark
-                                        ? 'bg-[#2a2a2a] border-white/10 text-white focus:bg-[#333]'
-                                        : 'bg-gray-50 border-gray-200 text-gray-900 focus:bg-white'
-                                        }`}
-                                    value={val(selectedElement.target)}
-                                    onChange={(e) => handleAttributeChange('target', e.target.value)}
-                                >
-                                    <option value="">Same Tab (_self)</option>
-                                    <option value="_blank">New Tab (_blank)</option>
-                                    <option value="_parent">Parent Frame</option>
-                                    <option value="_top">Full Window</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* TEXT CONTENT SECTION */}
-                <div className={`border rounded-xl overflow-hidden ${isDark ? 'border-white/10' : 'border-gray-200'
-                    }`}>
-                    <SectionHeader title="Text Content" icon={Type} expanded={sectionsExpanded.text} section="text" />
-
-                    {sectionsExpanded.text && (
-                        <div className="p-4 space-y-3">
-                            <textarea
-                                className={`w-full p-3 border rounded-lg text-sm transition-all resize-y min-h-[80px] focus:ring-2 focus:ring-blue-500 focus:outline-none ${isDark
-                                    ? 'bg-[#2a2a2a] border-white/10 text-white focus:bg-[#333]'
-                                    : 'bg-gray-50 border-gray-200 text-gray-900 focus:bg-white'
-                                    }`}
-                                rows={3}
-                                value={val(selectedElement.text)}
-                                onChange={handleTextChange}
-                                placeholder="Enter text content..."
-                            />
-
-                            {/* Quick Text Formatting */}
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => {
-                                        const hasBold = selectedElement.classes?.includes('font-bold');
-                                        const newClasses = hasBold
-                                            ? selectedElement.classes.replace('font-bold', '').trim()
-                                            : `${selectedElement.classes || ''} font-bold`.trim();
-                                        updateElementProperty('classes', newClasses);
-                                    }}
-                                    className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all ${selectedElement.classes?.includes('font-bold')
-                                        ? isDark ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white'
-                                        : isDark ? 'bg-[#2a2a2a] hover:bg-[#333] text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                                        }`}
-                                    title="Bold"
-                                >
-                                    <Bold size={16} />
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        const hasItalic = selectedElement.classes?.includes('italic');
-                                        const newClasses = hasItalic
-                                            ? selectedElement.classes.replace('italic', '').trim()
-                                            : `${selectedElement.classes || ''} italic`.trim();
-                                        updateElementProperty('classes', newClasses);
-                                    }}
-                                    className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all ${selectedElement.classes?.includes('italic')
-                                        ? isDark ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white'
-                                        : isDark ? 'bg-[#2a2a2a] hover:bg-[#333] text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                                        }`}
-                                    title="Italic"
-                                >
-                                    <Italic size={16} />
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        const hasUnderline = selectedElement.classes?.includes('underline');
-                                        const newClasses = hasUnderline
-                                            ? selectedElement.classes.replace('underline', '').trim()
-                                            : `${selectedElement.classes || ''} underline`.trim();
-                                        updateElementProperty('classes', newClasses);
-                                    }}
-                                    className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all ${selectedElement.classes?.includes('underline')
-                                        ? isDark ? 'bg-blue-600 text-white' : 'bg-blue-600 text-white'
-                                        : isDark ? 'bg-[#2a2a2a] hover:bg-[#333] text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                                        }`}
-                                    title="Underline"
-                                >
-                                    <Underline size={16} />
-                                </button>
-                            </div>
-
-                            {/* Text Alignment */}
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={() => {
-                                        let classes = selectedElement.classes || '';
-                                        classes = classes.replace(/text-(left|center|right|justify)/g, '').trim();
-                                        classes = `${classes} text-left`.trim();
-                                        updateElementProperty('classes', classes);
-                                    }}
-                                    className={`flex-1 flex items-center justify-center px-3 py-2 rounded-lg transition-all ${isDark ? 'bg-[#2a2a2a] hover:bg-[#333] text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                                        }`}
-                                    title="Align Left"
-                                >
-                                    <AlignLeft size={16} />
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        let classes = selectedElement.classes || '';
-                                        classes = classes.replace(/text-(left|center|right|justify)/g, '').trim();
-                                        classes = `${classes} text-center`.trim();
-                                        updateElementProperty('classes', classes);
-                                    }}
-                                    className={`flex-1 flex items-center justify-center px-3 py-2 rounded-lg transition-all ${isDark ? 'bg-[#2a2a2a] hover:bg-[#333] text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                                        }`}
-                                    title="Align Center"
-                                >
-                                    <AlignCenter size={16} />
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        let classes = selectedElement.classes || '';
-                                        classes = classes.replace(/text-(left|center|right|justify)/g, '').trim();
-                                        classes = `${classes} text-right`.trim();
-                                        updateElementProperty('classes', classes);
-                                    }}
-                                    className={`flex-1 flex items-center justify-center px-3 py-2 rounded-lg transition-all ${isDark ? 'bg-[#2a2a2a] hover:bg-[#333] text-white' : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                                        }`}
-                                    title="Align Right"
-                                >
-                                    <AlignRight size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                    <button
+                        onClick={() => setSelectedElement(null)}
+                        className={`p-2 rounded-xl transition-all duration-200 ${isDark ? 'hover:bg-red-500/10 text-gray-500 hover:text-red-400 border border-transparent hover:border-red-500/20' : 'hover:bg-gray-200 text-gray-400 hover:text-gray-600'}`}
+                    >
+                        <X size={20} strokeWidth={2.5} />
+                    </button>
                 </div>
+            </div>
 
-                {/* STYLING SECTION */}
-                <div className={`border rounded-xl overflow-hidden ${isDark ? 'border-white/10' : 'border-gray-200'
-                    }`}>
-                    <SectionHeader title="Styling & Classes" icon={Palette} expanded={sectionsExpanded.styling} section="styling" />
-
-                    {sectionsExpanded.styling && (
-                        <div className="p-4 space-y-3">
-                            {/* Tailwind Classes */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Tailwind Classes
-                                </label>
-                                <textarea
-                                    className={`w-full p-3 border rounded-lg text-sm font-mono resize-y min-h-[100px] transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none ${isDark
-                                        ? 'bg-[#2a2a2a] border-white/10 text-white focus:bg-[#333]'
-                                        : 'bg-gray-50 border-gray-200 text-gray-900 focus:bg-white'
-                                        }`}
-                                    rows={4}
-                                    value={val(selectedElement.classes)}
-                                    onChange={handleClassChange}
-                                    placeholder="Enter Tailwind classes..."
-                                />
-                            </div>
-
-                            {/* Quick Color Presets */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Quick Background Colors
-                                </label>
-                                <div className="grid grid-cols-6 gap-2">
-                                    {['bg-blue-500', 'bg-green-500', 'bg-red-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500'].map(color => (
-                                        <button
-                                            key={color}
-                                            onClick={() => {
-                                                let classes = selectedElement.classes || '';
-                                                classes = classes.replace(/bg-\S+/g, '').trim();
-                                                classes = `${classes} ${color}`.trim();
-                                                updateElementProperty('classes', classes);
-                                            }}
-                                            className={`${color} h-8 rounded-lg border-2 ${isDark ? 'border-white/20' : 'border-gray-300'
-                                                } hover:scale-110 transition-transform`}
-                                            title={color}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
+            {/* Main Content - Element Specific Properties */}
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/5 hover:scrollbar-thumb-white/10">
+                <div className="p-3 space-y-2">
+                    {renderElementPanel()}
                 </div>
-
-                {/* LAYOUT SECTION */}
-                <div className={`border rounded-xl overflow-hidden ${isDark ? 'border-white/10' : 'border-gray-200'
-                    }`}>
-                    <SectionHeader title="Layout & Display" icon={Layout} expanded={sectionsExpanded.layout} section="layout" />
-
-                    {sectionsExpanded.layout && (
-                        <div className="p-4 space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <label className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                        }`}>
-                                        Width
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className={`w-full px-3 py-2 border rounded-md text-sm ${isDark
-                                            ? 'bg-[#2a2a2a] border-white/10 text-white'
-                                            : 'bg-gray-50 border-gray-200 text-gray-900'
-                                            }`}
-                                        value={val(selectedElement.styles?.width) || 'Auto'}
-                                        readOnly
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                        }`}>
-                                        Height
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className={`w-full px-3 py-2 border rounded-md text-sm ${isDark
-                                            ? 'bg-[#2a2a2a] border-white/10 text-white'
-                                            : 'bg-gray-50 border-gray-200 text-gray-900'
-                                            }`}
-                                        value={val(selectedElement.styles?.height) || 'Auto'}
-                                        readOnly
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Display Type Quick Toggles */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Display Type
-                                </label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {['block', 'inline-block', 'flex', 'grid', 'inline', 'hidden'].map(display => (
-                                        <button
-                                            key={display}
-                                            onClick={() => {
-                                                let classes = selectedElement.classes || '';
-                                                classes = classes.replace(/\b(block|inline-block|inline|flex|grid|hidden)\b/g, '').trim();
-                                                classes = `${classes} ${display}`.trim();
-                                                updateElementProperty('classes', classes);
-                                            }}
-                                            className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${isDark
-                                                ? 'bg-[#2a2a2a] hover:bg-blue-600 text-white'
-                                                : 'bg-gray-100 hover:bg-blue-600 hover:text-white text-gray-900'
-                                                }`}
-                                        >
-                                            {display}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* SPACING SECTION */}
-                <div className={`border rounded-xl overflow-hidden ${isDark ? 'border-white/10' : 'border-gray-200'
-                    }`}>
-                    <SectionHeader title="Spacing" icon={Maximize2} expanded={sectionsExpanded.spacing} section="spacing" />
-
-                    {sectionsExpanded.spacing && (
-                        <div className="p-4 space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <label className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                        }`}>
-                                        Padding
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className={`w-full px-3 py-2 border rounded-md text-sm ${isDark
-                                            ? 'bg-[#2a2a2a] border-white/10 text-white'
-                                            : 'bg-gray-50 border-gray-200 text-gray-900'
-                                            }`}
-                                        value={val(selectedElement.styles?.padding) || ''}
-                                        readOnly
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                        }`}>
-                                        Margin
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className={`w-full px-3 py-2 border rounded-md text-sm ${isDark
-                                            ? 'bg-[#2a2a2a] border-white/10 text-white'
-                                            : 'bg-gray-50 border-gray-200 text-gray-900'
-                                            }`}
-                                        value={val(selectedElement.styles?.margin) || ''}
-                                        readOnly
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Quick Padding Presets */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Quick Padding
-                                </label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {['p-0', 'p-2', 'p-4', 'p-6', 'p-8', 'p-10', 'p-12', 'p-16'].map(padding => (
-                                        <button
-                                            key={padding}
-                                            onClick={() => {
-                                                let classes = selectedElement.classes || '';
-                                                classes = classes.replace(/\bp-\d+/g, '').trim();
-                                                classes = `${classes} ${padding}`.trim();
-                                                updateElementProperty('classes', classes);
-                                            }}
-                                            className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${isDark
-                                                ? 'bg-[#2a2a2a] hover:bg-blue-600 text-white'
-                                                : 'bg-gray-100 hover:bg-blue-600 hover:text-white text-gray-900'
-                                                }`}
-                                        >
-                                            {padding}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* TYPOGRAPHY SECTION */}
-                <div className={`border rounded-xl overflow-hidden ${isDark ? 'border-white/10' : 'border-gray-200'
-                    }`}>
-                    <SectionHeader title="Typography" icon={Type} expanded={sectionsExpanded.typography} section="typography" />
-
-                    {sectionsExpanded.typography && (
-                        <div className="p-4 space-y-3">
-                            {/* Font Size */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Font Size
-                                </label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl', 'text-3xl', 'text-4xl'].map(size => (
-                                        <button
-                                            key={size}
-                                            onClick={() => {
-                                                let classes = selectedElement.classes || '';
-                                                classes = classes.replace(/text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl)/g, '').trim();
-                                                classes = `${classes} ${size}`.trim();
-                                                updateElementProperty('classes', classes);
-                                            }}
-                                            className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${isDark
-                                                ? 'bg-[#2a2a2a] hover:bg-blue-600 text-white'
-                                                : 'bg-gray-100 hover:bg-blue-600 hover:text-white text-gray-900'
-                                                }`}
-                                        >
-                                            {size.split('-')[1]}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Font Weight */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Font Weight
-                                </label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {['font-light', 'font-normal', 'font-medium', 'font-semibold', 'font-bold', 'font-extrabold'].map(weight => (
-                                        <button
-                                            key={weight}
-                                            onClick={() => {
-                                                let classes = selectedElement.classes || '';
-                                                classes = classes.replace(/font-(light|normal|medium|semibold|bold|extrabold)/g, '').trim();
-                                                classes = `${classes} ${weight}`.trim();
-                                                updateElementProperty('classes', classes);
-                                            }}
-                                            className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${isDark
-                                                ? 'bg-[#2a2a2a] hover:bg-blue-600 text-white'
-                                                : 'bg-gray-100 hover:bg-blue-600 hover:text-white text-gray-900'
-                                                }`}
-                                        >
-                                            {weight.split('-')[1]}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* EFFECTS SECTION */}
-                <div className={`border rounded-xl overflow-hidden ${isDark ? 'border-white/10' : 'border-gray-200'
-                    }`}>
-                    <SectionHeader title="Effects & Borders" icon={Box} expanded={sectionsExpanded.effects} section="effects" />
-
-                    {sectionsExpanded.effects && (
-                        <div className="p-4 space-y-3">
-                            {/* Border Radius */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Border Radius
-                                </label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {['rounded-none', 'rounded-sm', 'rounded', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full'].map(radius => (
-                                        <button
-                                            key={radius}
-                                            onClick={() => {
-                                                let classes = selectedElement.classes || '';
-                                                classes = classes.replace(/rounded(-none|-sm|-md|-lg|-xl|-2xl|-3xl|-full)?/g, '').trim();
-                                                classes = `${classes} ${radius}`.trim();
-                                                updateElementProperty('classes', classes);
-                                            }}
-                                            className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${isDark
-                                                ? 'bg-[#2a2a2a] hover:bg-blue-600 text-white'
-                                                : 'bg-gray-100 hover:bg-blue-600 hover:text-white text-gray-900'
-                                                }`}
-                                        >
-                                            {radius.includes('-') ? radius.split('-')[1] : 'base'}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Shadow */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Shadow
-                                </label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {['shadow-none', 'shadow-sm', 'shadow', 'shadow-md', 'shadow-lg', 'shadow-xl', 'shadow-2xl'].map(shadow => (
-                                        <button
-                                            key={shadow}
-                                            onClick={() => {
-                                                let classes = selectedElement.classes || '';
-                                                classes = classes.replace(/shadow(-none|-sm|-md|-lg|-xl|-2xl)?/g, '').trim();
-                                                classes = `${classes} ${shadow}`.trim();
-                                                updateElementProperty('classes', classes);
-                                            }}
-                                            className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${isDark
-                                                ? 'bg-[#2a2a2a] hover:bg-blue-600 text-white'
-                                                : 'bg-gray-100 hover:bg-blue-600 hover:text-white text-gray-900'
-                                                }`}
-                                        >
-                                            {shadow.includes('-') ? shadow.split('-')[1] : 'base'}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Opacity */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Opacity
-                                </label>
-                                <div className="grid grid-cols-5 gap-2">
-                                    {['opacity-0', 'opacity-25', 'opacity-50', 'opacity-75', 'opacity-100'].map(opacity => (
-                                        <button
-                                            key={opacity}
-                                            onClick={() => {
-                                                let classes = selectedElement.classes || '';
-                                                classes = classes.replace(/opacity-\d+/g, '').trim();
-                                                classes = `${classes} ${opacity}`.trim();
-                                                updateElementProperty('classes', classes);
-                                            }}
-                                            className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${isDark
-                                                ? 'bg-[#2a2a2a] hover:bg-blue-600 text-white'
-                                                : 'bg-gray-100 hover:bg-blue-600 hover:text-white text-gray-900'
-                                                }`}
-                                        >
-                                            {opacity.split('-')[1]}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* ADVANCED SECTION */}
-                <div className={`border rounded-xl overflow-hidden ${isDark ? 'border-white/10' : 'border-gray-200'
-                    }`}>
-                    <SectionHeader title="Advanced" icon={Code} expanded={sectionsExpanded.advanced} section="advanced" />
-
-                    {sectionsExpanded.advanced && (
-                        <div className="p-4 space-y-3">
-                            {/* Position */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Position
-                                </label>
-                                <select
-                                    className={`w-full p-2.5 border rounded-lg text-sm transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none ${isDark
-                                        ? 'bg-[#2a2a2a] border-white/10 text-white focus:bg-[#333]'
-                                        : 'bg-gray-50 border-gray-200 text-gray-900 focus:bg-white'
-                                        }`}
-                                    onChange={(e) => {
-                                        let classes = selectedElement.classes || '';
-                                        classes = classes.replace(/\b(static|fixed|absolute|relative|sticky)\b/g, '').trim();
-                                        classes = `${classes} ${e.target.value}`.trim();
-                                        updateElementProperty('classes', classes);
-                                    }}
-                                >
-                                    <option value="static">Static</option>
-                                    <option value="relative">Relative</option>
-                                    <option value="absolute">Absolute</option>
-                                    <option value="fixed">Fixed</option>
-                                    <option value="sticky">Sticky</option>
-                                </select>
-                            </div>
-
-                            {/* Z-Index */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Z-Index
-                                </label>
-                                <div className="grid grid-cols-5 gap-2">
-                                    {['z-0', 'z-10', 'z-20', 'z-30', 'z-40', 'z-50'].map(zIndex => (
-                                        <button
-                                            key={zIndex}
-                                            onClick={() => {
-                                                let classes = selectedElement.classes || '';
-                                                classes = classes.replace(/z-\d+/g, '').trim();
-                                                classes = `${classes} ${zIndex}`.trim();
-                                                updateElementProperty('classes', classes);
-                                            }}
-                                            className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${isDark
-                                                ? 'bg-[#2a2a2a] hover:bg-blue-600 text-white'
-                                                : 'bg-gray-100 hover:bg-blue-600 hover:text-white text-gray-900'
-                                                }`}
-                                        >
-                                            {zIndex.split('-')[1]}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Overflow */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Overflow
-                                </label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {['overflow-visible', 'overflow-hidden', 'overflow-scroll', 'overflow-auto'].map(overflow => (
-                                        <button
-                                            key={overflow}
-                                            onClick={() => {
-                                                let classes = selectedElement.classes || '';
-                                                classes = classes.replace(/overflow-(visible|hidden|scroll|auto)/g, '').trim();
-                                                classes = `${classes} ${overflow}`.trim();
-                                                updateElementProperty('classes', classes);
-                                            }}
-                                            className={`px-2 py-1.5 rounded text-xs font-medium transition-all ${isDark
-                                                ? 'bg-[#2a2a2a] hover:bg-blue-600 text-white'
-                                                : 'bg-gray-100 hover:bg-blue-600 hover:text-white text-gray-900'
-                                                }`}
-                                        >
-                                            {overflow.split('-')[1]}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Cursor */}
-                            <div className="space-y-2">
-                                <label className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'
-                                    }`}>
-                                    Cursor
-                                </label>
-                                <select
-                                    className={`w-full p-2.5 border rounded-lg text-sm transition-all focus:ring-2 focus:ring-blue-500 focus:outline-none ${isDark
-                                        ? 'bg-[#2a2a2a] border-white/10 text-white focus:bg-[#333]'
-                                        : 'bg-gray-50 border-gray-200 text-gray-900 focus:bg-white'
-                                        }`}
-                                    onChange={(e) => {
-                                        let classes = selectedElement.classes || '';
-                                        classes = classes.replace(/cursor-\S+/g, '').trim();
-                                        classes = `${classes} ${e.target.value}`.trim();
-                                        updateElementProperty('classes', classes);
-                                    }}
-                                >
-                                    <option value="cursor-auto">Auto</option>
-                                    <option value="cursor-pointer">Pointer</option>
-                                    <option value="cursor-not-allowed">Not Allowed</option>
-                                    <option value="cursor-wait">Wait</option>
-                                    <option value="cursor-text">Text</option>
-                                    <option value="cursor-move">Move</option>
-                                </select>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
             </div>
 
             {/* Save & Cancel Buttons */}
-            <div className={`p-5 border-t flex gap-3 ${isDark ? 'border-white/10 bg-[#1a1a1a]' : 'border-gray-200 bg-white'
-                }`}>
+            <div className={`p-5 border-t flex flex-col gap-3 ${isDark ? 'border-white/5 bg-[#1a1a1a]' : 'border-gray-100 bg-white'}`}>
                 {showSaveSuccess ? (
-                    <div className={`flex-1 py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 ${isDark ? 'bg-green-600 text-white' : 'bg-green-600 text-white'
-                        }`}>
-                        <Check size={18} />
-                        Saved Successfully!
+                    <div className="w-full py-3.5 px-4 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-3 bg-green-500 shadow-lg shadow-green-500/20 text-white transition-all duration-300 transform scale-105">
+                        <Check size={18} strokeWidth={3} />
+                        Changes Saved
                     </div>
                 ) : (
                     <>
                         <button
                             onClick={handleSave}
-                            className={`flex-1 py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-all ${isDark
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                                : 'bg-blue-600 hover:bg-blue-700 text-white'
-                                }`}
+                            className="w-full py-3.5 px-4 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20 active:scale-95"
                         >
-                            <Check size={18} />
-                            Save
+                            <Check size={16} strokeWidth={3} />
+                            Apply Changes
                         </button>
                         <button
                             onClick={handleCancel}
-                            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${isDark
-                                ? 'bg-gray-700 hover:bg-gray-600 text-white'
-                                : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
+                            className={`w-full py-3 px-4 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all duration-200 border ${isDark
+                                ? 'bg-transparent border-white/5 hover:bg-white/5 text-gray-500 hover:text-white'
+                                : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-500 hover:text-gray-900'
                                 }`}
                         >
-                            Cancel
+                            Discard Changes
                         </button>
                     </>
                 )}

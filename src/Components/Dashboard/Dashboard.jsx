@@ -12,6 +12,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import AppAlert from "../common/AppAlert.jsx";
 import { gsap } from "gsap";
+import { ProjectAPI } from "../../services/ProjectAPI.js";
 
 // ============================================
 // STAT CARD COMPONENT
@@ -47,10 +48,10 @@ const StatCard = ({ icon: Icon, label, value, trend, color }) => (
 // ============================================
 // PROJECT ROW COMPONENT
 // ============================================
-const ProjectRow = ({ project, onClick, delay }) => (
+const ProjectRow = ({ project, onClick, delay, isLoading = false }) => (
     <div
-        onClick={onClick}
-        className="project-row-item group relative flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10 hover:border-purple-500/40 transition-all cursor-pointer overflow-hidden"
+        onClick={!isLoading ? onClick : undefined}
+        className={`project-row-item group relative flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10 hover:border-purple-500/40 transition-all overflow-hidden ${isLoading ? 'cursor-wait opacity-70' : 'cursor-pointer'}`}
         style={{ animationDelay: `${delay}s` }}
     >
         {/* Hover glow effect */}
@@ -58,7 +59,11 @@ const ProjectRow = ({ project, onClick, delay }) => (
 
         <div className="relative z-10 flex items-center gap-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20 group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-lg group-hover:shadow-purple-500/50 transition-all duration-300">
-                <FiFolder className="text-purple-400 group-hover:text-purple-300 transition-colors" />
+                {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                    <FiFolder className="text-purple-400 group-hover:text-purple-300 transition-colors" />
+                )}
             </div>
             <div>
                 <p className="text-white font-medium group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:from-purple-400 group-hover:to-blue-400 group-hover:bg-clip-text transition-all">
@@ -66,11 +71,15 @@ const ProjectRow = ({ project, onClick, delay }) => (
                 </p>
                 <p className="text-gray-500 text-xs flex items-center gap-1">
                     <FiClock size={10} className="group-hover:text-purple-400 transition-colors" />
-                    Updated recently
+                    {isLoading ? "Loading..." : "Updated recently"}
                 </p>
             </div>
         </div>
-        <FiArrowRight className="relative z-10 text-gray-600 group-hover:text-purple-400 group-hover:translate-x-2 group-hover:scale-125 transition-all duration-300" />
+        {isLoading ? (
+            <span className="relative z-10 text-purple-400 text-sm font-medium">Loading...</span>
+        ) : (
+            <FiArrowRight className="relative z-10 text-gray-600 group-hover:text-purple-400 group-hover:translate-x-2 group-hover:scale-125 transition-all duration-300" />
+        )}
     </div>
 );
 
@@ -103,6 +112,63 @@ const Dashboard = () => {
 
     const username = Cookies.get("username") || "User";
     const [alert, setAlert] = useState({ open: false, message: "", severity: "success" });
+    const [loadingProjectId, setLoadingProjectId] = useState(null);
+
+    // Handle project click - fetch code from folder then navigate
+    const handleProjectClick = async (project) => {
+        const projectId = project.project_id;
+        setLoadingProjectId(projectId);
+
+        try {
+            // Fetch project code from saved folder
+            const result = await ProjectAPI.fetchProjectCode(projectId);
+
+            // Robust extraction: backend might wrap data in a 'data' property or 'files' might be at root
+            const projectData = result?.data || result;
+            const files = projectData?.files || result?.files;
+            const sessionId = projectData?.session_id || result?.session_id;
+
+            if (result.status && files) {
+                // Navigate to preview with fetched code
+                navigate("/project/preview", {
+                    state: {
+                        project_id: projectId,
+                        session_id: sessionId,
+                        project_name: project.project_name,
+                        html: files.html,
+                        css: files.css,
+                        js: files.js,
+                        fromSavedFolder: true
+                    }
+                });
+            } else {
+                // Fallback: navigate without pre-fetched code
+                navigate("/project/preview", {
+                    state: {
+                        project_id: projectId,
+                        session_id: sessionId || result?.session_id,
+                        project_name: project.project_name
+                    }
+                });
+            }
+        } catch (err) {
+            console.error("Error fetching project:", err);
+            // Still navigate but show warning
+            setAlert({
+                open: true,
+                message: "Could not load saved project. Loading from database...",
+                severity: "warning"
+            });
+            navigate("/project/preview", {
+                state: {
+                    project_id: projectId,
+                    project_name: project.project_name
+                }
+            });
+        } finally {
+            setLoadingProjectId(null);
+        }
+    };
 
     // 🎨 Ultra Premium GSAP Animations
     useEffect(() => {
@@ -539,7 +605,8 @@ const Dashboard = () => {
                                             <ProjectRow
                                                 project={project}
                                                 delay={i * 0.1}
-                                                onClick={() => navigate("/project/preview", { state: { project_id: project.project_id } })}
+                                                onClick={() => handleProjectClick(project)}
+                                                isLoading={loadingProjectId === project.project_id}
                                             />
                                         </div>
                                     ))

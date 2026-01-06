@@ -1,9 +1,8 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import {
     FiHome, FiUser, FiLayers, FiShoppingCart, FiMail, FiCpu,
     FiMessageCircle, FiHelpCircle, FiDollarSign, FiPackage, FiImage, FiVideo, FiCalendar, FiCheck, FiBox
 } from "react-icons/fi";
-import { gsap } from "gsap";
 
 export const MODULES_OPTIONS = [
     { label: "Home", value: "home", icon: <FiHome /> },
@@ -56,29 +55,12 @@ const FeaturesSelection = ({
     setSelected,
     options = MODULES_OPTIONS,
 }) => {
-    const buttonsRef = useRef([]);
-
     // Normalize all options
     const normalizedOptions = options
         .map((opt, i) => normalizeOption(opt, i))
         .filter(Boolean);
 
-    useEffect(() => {
-        const validButtons = buttonsRef.current.filter(Boolean);
-        if (validButtons.length > 0) {
-            gsap.fromTo(
-                validButtons,
-                { opacity: 0, scale: 0.9, y: 15 },
-                { opacity: 1, scale: 1, y: 0, stagger: 0.03, duration: 0.3, ease: "back.out(1.7)" }
-            );
-        }
-    }, [normalizedOptions]);
-
-    const handleSelect = (optionValue, e) => {
-        if (e) {
-            gsap.to(e.currentTarget, { scale: 0.95, duration: 0.1, yoyo: true, repeat: 1 });
-        }
-
+    const handleSelect = (optionValue) => {
         if (selected.includes(optionValue)) {
             setSelected(selected.filter(item => item !== optionValue));
         } else {
@@ -105,8 +87,8 @@ const FeaturesSelection = ({
                     <span>Available Modules</span>
                 </div>
                 <div className={`px-3 py-1 rounded-full text-xs font-semibold ${selected.length > 0
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                        : 'bg-white/5 text-gray-500 border border-white/10'
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                    : 'bg-white/5 text-gray-500 border border-white/10'
                     }`}>
                     {selected.length} selected
                 </div>
@@ -129,11 +111,10 @@ const FeaturesSelection = ({
                     return (
                         <button
                             key={i}
-                            ref={(el) => (buttonsRef.current[i] = el)}
-                            onClick={(e) => handleSelect(optionValue, e)}
+                            onClick={() => handleSelect(optionValue)}
                             className={`relative flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${isSelected
-                                    ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 border-purple-500/50 text-white'
-                                    : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white hover:border-white/20'
+                                ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 border-purple-500/50 text-white'
+                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:text-white hover:border-white/20'
                                 }`}
                         >
                             <span className={`text-lg transition-colors ${isSelected ? 'text-purple-400' : ''}`}>

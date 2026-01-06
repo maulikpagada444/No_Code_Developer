@@ -452,11 +452,29 @@ export const EditorProvider = ({ children, sessionId }) => {
             return;
         }
 
+        // Send revert message to iframe to restore original element state
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+            // Send all original properties to restore
+            ['text', 'classes', 'src', 'href', 'alt', 'placeholder', 'target'].forEach(field => {
+                if (originalElement[field] !== undefined) {
+                    iframeRef.current.contentWindow.postMessage({
+                        type: 'UPDATE_ELEMENT',
+                        payload: { field, value: originalElement[field] }
+                    }, '*');
+                }
+            });
+        }
+
+        // Trigger UI update with original values briefly
         setSelectedElement(originalElement);
         setElementUpdateTrigger(prev => prev + 1);
-        setSelectedElement(null);
-        setOriginalElement(null);
-    }, [originalElement]);
+
+        // Then close the panel
+        setTimeout(() => {
+            setSelectedElement(null);
+            setOriginalElement(null);
+        }, 50);
+    }, [originalElement, iframeRef]);
 
     // Custom setSelectedElement wrapper to also store original
     const selectElement = useCallback((element) => {
