@@ -1,5 +1,5 @@
 
-import React, { useContext, useState, useMemo, useEffect } from 'react';
+import React, { useContext, useState, useMemo, useEffect, useRef } from 'react';
 import { useEditor } from './EditorContext';
 import {
     X, Check, Image as ImageIcon, Type, Palette, Box, Layout,
@@ -18,6 +18,10 @@ const PropertiesPanel = () => {
     const [bgColor, setBgColor] = useState('#3b82f6');
     const [textColor, setTextColor] = useState('#ffffff');
 
+    // Local state for text editing to prevent cursor jumping
+    const [localText, setLocalText] = useState('');
+    const textUpdateTimeoutRef = useRef(null);
+
     // Accordion states for collapsible sections
     const [sectionsExpanded, setSectionsExpanded] = useState({
         element: true,
@@ -29,6 +33,13 @@ const PropertiesPanel = () => {
         layout: false,
         advanced: false
     });
+
+    // Sync local text with selectedElement when element changes
+    useEffect(() => {
+        if (selectedElement?.text !== undefined) {
+            setLocalText(selectedElement.text || '');
+        }
+    }, [selectedElement?.tagName, selectedElement?.id]); // Only sync on element change, not on text change
 
     // Sync colors when selectedElement changes
     useEffect(() => {
@@ -134,11 +145,11 @@ const PropertiesPanel = () => {
     const handleAttributeChange = (attr, value) => {
         updateElementProperty(attr, value);
 
-        // If classes changed, also update iframe immediately
-        if (attr === 'classes' && iframeRef?.current?.contentWindow) {
+        // Send all changes to iframe immediately for real-time preview
+        if (iframeRef?.current?.contentWindow) {
             iframeRef.current.contentWindow.postMessage({
                 type: 'UPDATE_ELEMENT',
-                payload: { field: 'classes', value: value }
+                payload: { field: attr, value: value }
             }, '*');
         }
     };
@@ -152,6 +163,22 @@ const PropertiesPanel = () => {
             };
             reader.readAsDataURL(file);
         }
+    };
+
+    // Handle text changes with debouncing to prevent cursor jumping
+    const handleTextChange = (newText) => {
+        // Update local state immediately for smooth typing
+        setLocalText(newText);
+
+        // Clear previous timeout
+        if (textUpdateTimeoutRef.current) {
+            clearTimeout(textUpdateTimeoutRef.current);
+        }
+
+        // Debounce: Update iframe and state after 300ms of no typing
+        textUpdateTimeoutRef.current = setTimeout(() => {
+            handleAttributeChange('text', newText);
+        }, 300);
     };
 
     const handleSave = () => {
@@ -229,12 +256,25 @@ const PropertiesPanel = () => {
         const applyColor = (color, cls) => {
             setColorState(color);
             let classes = selectedElement.classes || '';
+            console.log('🎨 Before color change:', classes);
+
             if (isBackground) {
-                classes = classes.replace(/bg-\S+/g, '').replace(/bg-\[#[a-fA-F0-9]+\]/g, '').trim();
+                // Remove all background color classes
+                classes = classes.replace(/bg-\S+/g, '').replace(/\s+/g, ' ').trim();
             } else {
-                classes = classes.replace(/text-\S+-\d+/g, '').replace(/text-white/g, '').replace(/text-black/g, '').replace(/text-\[#[a-fA-F0-9]+\]/g, '').trim();
+                // Remove only text COLOR classes, preserve text-size, text-align, etc.
+                // Matches: text-red-500, text-blue-600, text-white, text-black, text-[#hex], but NOT text-center, text-xl, etc.
+                classes = classes
+                    .replace(/text-(red|blue|green|yellow|purple|pink|indigo|gray|slate|zinc|neutral|stone|orange|amber|lime|emerald|teal|cyan|sky|violet|fuchsia|rose)-\d+/g, '')
+                    .replace(/text-(white|black|transparent|current)/g, '')
+                    .replace(/text-\[#[a-fA-F0-9]+\]/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
             }
-            handleAttributeChange('classes', `${classes} ${cls || (isBackground ? `bg-[${color}]` : `text-[${color}]`)}`.trim());
+
+            const newClasses = `${classes} ${cls || (isBackground ? `bg-[${color}]` : `text-[${color}]`)}`.replace(/\s+/g, ' ').trim();
+            console.log('🎨 After color change:', newClasses);
+            handleAttributeChange('classes', newClasses);
         };
 
         return (
@@ -708,7 +748,12 @@ const PropertiesPanel = () => {
         <div className="space-y-4">
             <div className="p-3 rounded-xl space-y-3 bg-white/5 border border-white/5">
                 <label className={labelClass}>Content Editor</label>
-                <textarea className={`${inputClass} min-h-[120px] font-medium leading-relaxed`} value={val(selectedElement.text)} onChange={(e) => handleAttributeChange('text', e.target.value)} placeholder="Type your content here..." />
+                <textarea
+                    className={`${inputClass} min-h-[120px] font-medium leading-relaxed`}
+                    value={localText}
+                    onChange={(e) => handleTextChange(e.target.value)}
+                    placeholder="Type your content here..."
+                />
             </div>
 
             <TypographySection />

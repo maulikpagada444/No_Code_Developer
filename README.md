@@ -311,28 +311,41 @@ npm run lint     # Code linting
 
 #### **Element Selection (Interact Mode)**
 - Toggle "Interact" mode to enable element selection
-- Click any element to select (blue border)
-- Hover preview (dotted border)
+- Click any element to select (purple solid border)
+- Hover preview (blue dashed border)
 - Clean borders removed when mode disabled or navigating away
+- IIFE-wrapped injection script prevents multiple initialization
 
 #### **Properties Panel**
 Features:
-- **Text Content**: Edit inner text of elements
-- **Styles**: Modify CSS properties (color, background, font, etc.)
-- **Attributes**: Change HTML attributes (id, href, src, etc.)
-- **Classes**: Add/remove CSS classes
-- **Save/Cancel**: Persist or discard changes
+- **Content Editor**: Real-time text editing with debouncing (300ms)
+  - Smooth typing experience without cursor jumping
+  - Local state management for instant UI feedback
+  - Synced to iframe after typing pause
+- **Typography**: 
+  - Text color picker with smart class replacement
+  - Preserves text-size, text-align utilities
+  - Only removes actual color classes
+  - Font size, weight, alignment controls
+- **Styles**: Modify CSS properties (color, background, spacing, etc.)
+- **Attributes**: Change HTML attributes (id, href, src, alt, etc.)
+- **Classes**: Add/remove CSS classes with real-time preview
+- **Save/Cancel**: 
+  - Save: Persist changes to localStorage and redirect to dashboard
+  - Cancel: Revert to original element state
 
 #### **Undo/Redo System**
-- Full history tracking
+- Full history tracking with state snapshots
 - Keyboard shortcuts (Ctrl+Z, Ctrl+Y)
 - Persistent across page refreshes
 - Session-specific storage
+- cleanHtmlContent helper removes interaction attributes before saving
 
 #### **Session Isolation**
-- Each project uses unique localStorage keys (`html_content_${sessionId}`)
+- Each project uses unique localStorage keys (`editorHtmlContent_${sessionId}`)
 - Prevents content bleeding between projects
 - Force remount on session change
+- Separate keys for HTML, undo/redo history, and sync status
 
 ### **2. AI Chat System**
 
@@ -480,7 +493,16 @@ git push origin feature/amazing-feature
 
 ## 📝 Recent Fixes & Improvements
 
-### **January 2026 Updates**
+### **January 7, 2026 Updates**
+✅ **Edit Element Functionality** - Fixed interaction mode and element click handling  
+✅ **Real-Time Text Editing** - Smooth typing without cursor jumping (debounced updates)  
+✅ **Color Picker** - Fixed text color application with smart class replacement  
+✅ **Dashboard Animations** - Optimized New Project card entrance (smooth slide-in)  
+✅ **Project Opening** - Added code fetching to All Projects page cards  
+✅ **Dropdown Menus** - Fixed z-index so delete/rename options show above cards  
+✅ **Auto Dashboard Redirect** - Save button redirects to dashboard after 1.5s  
+
+### **January 2026 Earlier Updates**
 ✅ **Preview Page Content Isolation** - Fixed localStorage caching issue  
 ✅ **Save/Cancel Functionality** - Added to properties panel  
 ✅ **Interact Mode Borders** - Cleaned on mode toggle/navigation  

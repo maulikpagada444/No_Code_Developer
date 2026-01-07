@@ -146,12 +146,6 @@ const Header = () => {
                                 {theme === 'dark' ? <FiSun size={18} /> : <FiMoon size={18} />}
                             </button>
 
-                            {/* Notifications */}
-                            <button className="relative w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition-all">
-                                <FiBell size={18} />
-                                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
-                            </button>
-
                             {/* User Menu */}
                             <div className="relative">
                                 <button

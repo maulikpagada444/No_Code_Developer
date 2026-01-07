@@ -50,6 +50,14 @@ const baseScript = `
 // Interaction script for edit mode - only when interact mode is enabled
 const interactionScript = `
 <script>
+(function() {
+  // Guard: Prevent multiple executions
+  if (window.__JARVIS_SELECTOR_INITIALIZED__) {
+    console.log('⚠️ Jarvis selector already initialized, skipping...');
+    return;
+  }
+  window.__JARVIS_SELECTOR_INITIALIZED__ = true;
+  
   let selectionEnabled = true;
   const STYLE_ID = 'jarvis-interaction-styles';
   let currentSelectedElement = null;
@@ -232,6 +240,7 @@ const interactionScript = `
   window.addEventListener('message', e => {
     if (e.data.type === 'SET_SELECTION_MODE') {
       selectionEnabled = !!e.data.payload?.enabled;
+      console.log('🎯 Selection mode:', selectionEnabled ? 'ENABLED' : 'DISABLED');
       updateStyles();
       if (!selectionEnabled) {
         document.querySelectorAll('[data-hover], [data-selected]').forEach(el => {
@@ -270,6 +279,7 @@ const interactionScript = `
     const mouseX = e.clientX;
     const mouseY = e.clientY;
 
+    console.log('🔵 Element clicked:', elementProps);
     window.parent.postMessage({
       type: 'ELEMENT_CLICKED',
       payload: {
@@ -309,6 +319,9 @@ const interactionScript = `
       }
     }
   });
+
+  console.log('✅ Jarvis selector initialized');
+})();
 </script>
 `;
 
@@ -542,13 +555,28 @@ function PreviewContent() {
     }
   }, [selectedElement]);
 
-  /* ---------------- CLOSE PANEL WHEN SWITCHING TO PREVIEW OR DISABLING INTERACT ---------------- */
+  /* ---------------- SYNC INTERACTION MODE TO IFRAME ---------------- */
+  useEffect(() => {
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        {
+          type: "SET_SELECTION_MODE",
+          payload: { enabled: interactionMode }
+        },
+        "*"
+      );
+      console.log(`🎯 Interaction mode ${interactionMode ? 'ENABLED' : 'DISABLED'} in iframe`);
+    }
+  }, [interactionMode]);
+
+  /* ---------------- INTERACTION MODE HANDLING ---------------- */
   useEffect(() => {
     // If switching to preview mode, force interaction mode OFF
     if (mode === "preview" && interactionMode) {
       setInteractionMode(false);
     }
 
+    // Close properties panel when interaction mode is disabled or in preview mode
     if ((mode === "preview" || !interactionMode) && selectedElement) {
       setSelectedElement(null);
       if (iframeRef.current?.contentWindow) {
@@ -658,6 +686,11 @@ ${shouldInjectScript ? interactionScript : ""}
         const storageKey = sessionIdFromRoute ? `editorHtmlContent_${sessionIdFromRoute}` : 'editorHtmlContent';
         // Keep localStorage as backup but mark as synced
         localStorage.setItem(`${storageKey}_synced`, 'true');
+
+        // Redirect to dashboard after showing success message
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
       } else {
         throw new Error(result.message || "Failed to save project");
       }

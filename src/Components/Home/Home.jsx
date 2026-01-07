@@ -190,7 +190,7 @@ const HeroSection = () => {
         {/* Title */}
         <h1 className="hero-title text-5xl md:text-7xl lg:text-8xl font-black mb-8 leading-[1.1] tracking-tight">
           Empower business growth <br />
-          <span className="text-gradient holographic animate-text-shimmer">with AI technologies</span> today.
+          <span>with AI technologies</span> today.
         </h1>
 
         {/* Subtitle */}

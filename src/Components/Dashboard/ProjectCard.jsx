@@ -3,11 +3,13 @@ import { FiFolder, FiMoreVertical, FiEdit2, FiTrash2, FiExternalLink, FiClock } 
 import { ThemeContext } from "../../ThemeProvider.jsx";
 import { useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
+import { ProjectAPI } from "../../services/ProjectAPI.js";
 
 const ProjectCard = ({ project, viewMode = "grid", onDeleteClick, onEditClick }) => {
     const { theme } = useContext(ThemeContext);
     const navigate = useNavigate();
     const [openMenu, setOpenMenu] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const menuRef = useRef(null);
     const cardRef = useRef(null);
 
@@ -75,8 +77,57 @@ const ProjectCard = ({ project, viewMode = "grid", onDeleteClick, onEditClick })
         return () => document.removeEventListener("mousedown", handler);
     }, []);
 
-    const handleOpen = () => {
-        navigate("/project/preview", { state: { project_id: project.project_id } });
+    // Handle project open - fetch code from folder
+    const handleOpen = async () => {
+        if (isLoading) return;
+
+        const projectId = project.project_id;
+        setIsLoading(true);
+
+        try {
+            // Fetch project code from saved folder
+            const result = await ProjectAPI.fetchProjectCode(projectId);
+
+            // Robust extraction
+            const projectData = result?.data || result;
+            const files = projectData?.files || result?.files;
+            const sessionId = projectData?.session_id || result?.session_id;
+
+            if (result.status && files) {
+                // Navigate with fetched code
+                navigate("/project/preview", {
+                    state: {
+                        project_id: projectId,
+                        session_id: sessionId,
+                        project_name: project.project_name,
+                        html: files.html,
+                        css: files.css,
+                        js: files.js,
+                        fromSavedFolder: true
+                    }
+                });
+            } else {
+                // Fallback: navigate without pre-fetched code
+                navigate("/project/preview", {
+                    state: {
+                        project_id: projectId,
+                        session_id: sessionId || result?.session_id,
+                        project_name: project.project_name
+                    }
+                });
+            }
+        } catch (err) {
+            console.error("Error fetching project:", err);
+            // Still navigate on error
+            navigate("/project/preview", {
+                state: {
+                    project_id: projectId,
+                    project_name: project.project_name
+                }
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     // Grid View
@@ -84,23 +135,27 @@ const ProjectCard = ({ project, viewMode = "grid", onDeleteClick, onEditClick })
         return (
             <div
                 ref={cardRef}
-                className="group p-5 rounded-2xl glass-card card-hover cursor-pointer"
+                className={`group relative p-5 rounded-2xl glass-card card-hover overflow-visible ${isLoading ? 'cursor-wait opacity-70' : 'cursor-pointer'} ${openMenu ? 'z-[200]' : 'z-10'}`}
                 onClick={handleOpen}
             >
                 {/* Thumbnail */}
                 <div className="relative h-32 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-white/5 mb-4 overflow-hidden">
                     <div className="absolute inset-0 bg-dots opacity-50" />
 
-                    {/* Folder Icon */}
+                    {/* Folder Icon / Loading Spinner */}
                     <div className="absolute top-3 left-3 w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center shadow-lg">
-                        <FiFolder className="text-white" />
+                        {isLoading ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <FiFolder className="text-white" />
+                        )}
                     </div>
 
                     {/* Hover Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-3">
                         <span className="text-white text-sm font-medium flex items-center gap-1">
                             <FiExternalLink size={14} />
-                            Open Project
+                            {isLoading ? 'Loading...' : 'Open Project'}
                         </span>
                     </div>
                 </div>
@@ -127,7 +182,7 @@ const ProjectCard = ({ project, viewMode = "grid", onDeleteClick, onEditClick })
                         </button>
 
                         {openMenu && (
-                            <div className="absolute right-0 top-full mt-1 w-36 rounded-xl glass-card border border-white/10 overflow-hidden shadow-xl z-50">
+                            <div className="absolute right-0 top-full mt-2 w-40 rounded-xl glass-card border border-white/10 overflow-visible shadow-2xl z-[100]">
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onEditClick(project); setOpenMenu(false); }}
                                     className="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-all"
@@ -137,7 +192,7 @@ const ProjectCard = ({ project, viewMode = "grid", onDeleteClick, onEditClick })
                                 </button>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); onDeleteClick(project); setOpenMenu(false); }}
-                                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-all"
+                                    className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-400 hover:bg-red-500/10 transition-all border-t border-white/5"
                                 >
                                     <FiTrash2 size={14} />
                                     Delete
@@ -154,12 +209,16 @@ const ProjectCard = ({ project, viewMode = "grid", onDeleteClick, onEditClick })
     return (
         <div
             ref={cardRef}
-            className="group flex items-center gap-4 p-4 rounded-xl glass-card card-hover cursor-pointer"
+            className={`group relative flex items-center gap-4 p-4 rounded-xl glass-card card-hover overflow-visible ${isLoading ? 'cursor-wait opacity-70' : 'cursor-pointer'} ${openMenu ? 'z-[200]' : 'z-10'}`}
             onClick={handleOpen}
         >
             {/* Icon */}
             <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-500/20 to-blue-500/20 flex items-center justify-center border border-purple-500/20 flex-shrink-0">
-                <FiFolder className="text-purple-400" />
+                {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                    <FiFolder className="text-purple-400" />
+                )}
             </div>
 
             {/* Info */}

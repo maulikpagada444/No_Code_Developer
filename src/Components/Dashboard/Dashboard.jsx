@@ -216,18 +216,19 @@ const Dashboard = () => {
             },
             "-=0.3"
         )
-            // 3. Main cards with 3D flip
+            // 3. Main cards with slide-in effect (same as project rows)
             .fromTo(".main-card",
-                { opacity: 0, rotateY: -90, scale: 0.8 },
+                { opacity: 0, x: -50, rotateY: -10, scale: 0.9 },
                 {
                     opacity: 1,
+                    x: 0,
                     rotateY: 0,
                     scale: 1,
-                    duration: 1.2,
-                    stagger: 0.25,
-                    ease: "back.out(1.5)"
+                    duration: 0.8,
+                    stagger: 0.15,
+                    ease: "expo.out"
                 },
-                "-=0.7"
+                "-=0.5"
             );
 
         // 4. Dynamic orb animations with path
